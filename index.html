@@ -1,1 +1,216 @@
-123
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>旅遊手帳・Our Travel Diary</title>
+  
+  <!-- PWA 基本設定 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFD1DC">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+
+  <!-- Google Font: Zen Maru Gothic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 Free -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Zen Maru Gothic"', 'sans-serif'],
+          },
+          colors: {
+            'sakura': '#FFD1DC',
+            'beige': '#FFF9E3',
+            'aqua': '#B0E0E6',
+            'cocoa': '#8B7355',
+          },
+          borderRadius: {
+            '4xl': '2.5rem',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body class="bg-beige min-h-screen text-cocoa antialiased">
+
+  <div id="app"></div>
+
+  <!-- 這裡放 main.js 內容，或是獨立檔案引入 -->
+  <script type="module">
+    // main.js 內容直接寫在這裡（或之後改成 <script src="main.js" type="module"></script>）
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+
+    // ------------------- Header Component -------------------
+    const Header = {
+      template: `
+        <div class="relative h-[38vh] min-h-[260px] w-full overflow-hidden">
+          <!-- 背景圖 -->
+          <div class="absolute inset-0">
+            <img 
+              src="https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80" 
+              alt="櫻花背景" 
+              class="object-cover w-full h-full brightness-95"
+            >
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-beige/70"></div>
+          </div>
+          
+          <!-- 標題 -->
+          <div class="absolute bottom-6 left-5 right-5 text-center z-10">
+            <h1 class="text-4xl font-bold text-white drop-shadow-lg">旅遊手帳</h1>
+            <p class="text-white/90 mt-1 text-lg drop-shadow">與櫻花一起記錄旅程</p>
+          </div>
+        </div>
+      `
+    };
+
+    // ------------------- Floating → Sticky Tabs -------------------
+    const FloatingTabs = {
+      props: ['activeTab'],
+      emits: ['update:activeTab'],
+      setup(props, { emit }) {
+        const isSticky = ref(false);
+        const tabs = ref([
+          { id: 'schedule', label: '行程', icon: 'calendar-days' },
+          { id: 'map',      label: '導航', icon: 'map-location' },
+          { id: 'vouchers', label: '憑證', icon: 'ticket' },
+          { id: 'list',     label: '清單', icon: 'list-check' },
+          { id: 'expense',  label: '記帳', icon: 'yen-sign' },
+        ]);
+
+        onMounted(() => {
+          window.addEventListener('scroll', handleScroll);
+          handleScroll(); // 初次判斷
+        });
+
+        const handleScroll = () => {
+          // 當捲過 Header 高度約 70% 時切換 sticky
+          const headerHeight = window.innerHeight * 0.38;
+          isSticky.value = window.scrollY > headerHeight * 0.7;
+        };
+
+        return {
+          tabs,
+          isSticky,
+          activeTab: computed({
+            get: () => props.activeTab,
+            set: (val) => emit('update:activeTab', val)
+          })
+        };
+      },
+      template: `
+        <nav 
+          :class="[
+            'z-50 transition-all duration-300',
+            isSticky 
+              ? 'fixed top-0 left-0 right-0 bg-beige/95 backdrop-blur-md shadow-sm border-b border-sakura/30'
+              : 'absolute bottom-[-3.2rem] right-5 flex justify-end'
+          ]"
+        >
+          <div 
+            :class="[
+              isSticky 
+                ? 'flex w-full justify-around py-3 px-4'
+                : 'inline-flex bg-white/80 backdrop-blur-lg rounded-full shadow-lg px-2 py-3 gap-2 border border-sakura/40'
+            ]"
+          >
+            <button 
+              v-for="tab in tabs" 
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              :class="[
+                'flex flex-col items-center px-3 py-1 rounded-xl transition-colors',
+                activeTab === tab.id 
+                  ? 'text-sakura bg-sakura/10' 
+                  : 'text-cocoa/70 hover:text-sakura hover:bg-sakura/5'
+              ]"
+            >
+              <i :class="'fa-solid fa-' + tab.icon + ' text-xl mb-1'"></i>
+              <span class="text-xs font-medium">{{ tab.label }}</span>
+            </button>
+          </div>
+        </nav>
+      `
+    };
+
+    // ------------------- App 主元件 -------------------
+    const App = {
+      components: { Header, FloatingTabs },
+      setup() {
+        const activeTab = ref('schedule');
+
+        return { activeTab };
+      },
+      template: `
+        <div class="relative pb-24">
+          <Header />
+
+          <!-- 負邊距 + 圓角主內容區 -->
+          <main class="-mt-20 mx-4 rounded-4xl bg-white/90 backdrop-blur-sm shadow-xl border border-sakura/20 overflow-hidden min-h-[calc(100vh-38vh+5rem)]">
+            <div class="p-5">
+              <h2 class="text-2xl font-bold text-cocoa mb-4">
+                {{ activeTab === 'schedule' ? '今日行程' : activeTab + ' 頁面（開發中）' }}
+              </h2>
+              
+              <!-- 目前先放行程 placeholder -->
+              <div v-if="activeTab === 'schedule'" class="space-y-4">
+                <div class="bg-sakura/5 rounded-2xl p-4 border border-sakura/30">
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <p class="font-bold text-lg">09:00 - 11:30</p>
+                      <p class="text-cocoa/80">淺草寺 → 雷門 → 仲見世通り</p>
+                    </div>
+                    <span class="px-3 py-1 bg-sakura/20 rounded-full text-sm">景點</span>
+                  </div>
+                </div>
+                <!-- 更多卡片... -->
+              </div>
+            </div>
+          </main>
+
+          <FloatingTabs v-model:activeTab="activeTab" />
+          
+          <!-- 頁尾 debug -->
+          <footer class="text-center text-cocoa/50 py-8 text-sm">
+            🌸 Tiffany & Benjamin 🌸
+          </footer>
+        </div>
+      `
+    };
+
+    createApp(App).mount('#app');
+  </script>
+
+  <!-- PWA manifest （之後可獨立檔案） -->
+  <script id="manifest">
+    {
+      "name": "旅遊手帳",
+      "short_name": "Travel Diary",
+      "start_url": ".",
+      "display": "standalone",
+      "background_color": "#FFF9E3",
+      "theme_color": "#FFD1DC",
+      "icons": [
+        {
+          "src": "assets/icon.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  </script>
+
+</body>
+</html>
