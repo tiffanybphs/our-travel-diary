@@ -14,8 +14,8 @@
     'background_color': '#FFF9E3',
     'theme_color': '#FFD1DC',
     'icons': [
-      {'src': 'icon.png', 'sizes': '192x192', 'type': 'image/png'},
-      {'src': 'icon.png', 'sizes': '512x512', 'type': 'image/png'}
+      {'src':'icon.png','sizes':'192x192','type':'image/png'},
+      {'src':'icon.png','sizes':'512x512','type':'image/png'}
     ]
   }">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -57,70 +57,70 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
-    body {
-      background: #FFF9E3;
-      overscroll-behavior: none;
-    }
-    .backdrop-sakura {
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
+    body { background-color: #FFF9E3; }
+    .backdrop-smooth { backdrop-filter: blur(12px); }
   </style>
 </head>
 <body class="min-h-screen font-sans antialiased text-cocoa">
 
   <div id="app">
 
-    <!-- 頁首滿版背景 -->
-    <header class="relative h-[320px] md:h-[400px] bg-cover bg-center bg-no-repeat" 
+    <!-- 頁首滿版背景圖 -->
+    <header class="relative h-80 md:h-96 w-full bg-cover bg-center bg-no-repeat"
             style="background-image: url('splash.jpeg');">
       <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-beige/70"></div>
       <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-beige to-transparent pointer-events-none"></div>
     </header>
 
-    <!-- 主要內容區：負邊距向上 + 圓角 + 半透背板 -->
-    <main class="-mt-24 md:-mt-32 mx-4 md:mx-6 lg:mx-auto max-w-3xl relative z-10 pb-40">
-      <div class="bg-white/75 backdrop-sakura rounded-4xl shadow-soft border border-sakura/30 p-6 md:p-8">
+    <!-- 主要內容區：負邊距向上 + 圓角 + 半透 -->
+    <main class="-mt-20 md:-mt-28 mx-4 md:mx-auto max-w-3xl relative z-10 pb-40">
+      <div class="bg-white/75 backdrop-smooth rounded-4xl shadow-soft border border-sakura/30 p-6 md:p-8">
 
-        <!-- 標題 -->
-        <h1 class="text-3xl md:text-4xl font-bold text-center text-sakura tracking-wide mb-8">
-          旅遊手帳
-        </h1>
-
-        <!-- Tabs：初始浮動右下，捲動後變頂部置中 sticky -->
+        <!-- Tabs：初始右下浮動 → 捲動後頂部居中 sticky -->
         <nav :class="[
-          'fixed z-50 transition-all duration-300 ease-out',
-          isScrolled 
+          'fixed z-50 transition-all duration-500 ease-out',
+          isScrolled
             ? 'top-3 left-1/2 -translate-x-1/2 scale-95'
             : 'bottom-6 right-6 md:bottom-8 md:right-10'
         ]">
-          <div class="flex bg-white/85 backdrop-sakura rounded-full shadow-soft border border-sakura/40 px-1.5 py-1.5">
+          <div class="flex bg-white/85 backdrop-smooth rounded-full shadow-xl px-1.5 py-2 border border-sakura/40">
             <button v-for="tab in tabs" :key="tab.id"
                     @click="currentTab = tab.id"
                     :class="[
-                      'flex items-center justify-center px-4 py-3 md:px-6 rounded-full transition-colors text-sm md:text-base',
-                      currentTab === tab.id 
-                        ? 'bg-sakura/20 text-sakura font-medium' 
-                        : 'text-cocoa/70 hover:text-sakura hover:bg-sakura/10'
+                      'flex items-center justify-center px-4 py-3 md:px-6 transition-all',
+                      currentTab === tab.id
+                        ? 'text-sakura scale-110'
+                        : 'text-cocoa/70 hover:text-sakura hover:scale-105'
                     ]">
-              <i :class="tab.icon" class="text-xl md:text-2xl"></i>
-              <span class="ml-2 hidden md:inline">{{ tab.label }}</span>
+              <i :class="tab.icon" class="text-2xl md:text-3xl"></i>
+              <span class="hidden md:inline ml-2 text-base font-medium">{{ tab.label }}</span>
             </button>
           </div>
         </nav>
 
-        <!-- 目前分頁內容區域（之後各分頁放這裡） -->
-        <div class="mt-10 text-center text-cocoa/70">
-          <p class="text-lg mb-4">歡迎使用你的日系櫻花風旅遊手帳 🌸</p>
-          <p class="text-sm opacity-70">目前正在 Phase 1：基本佈局與導航</p>
-          <p class="mt-8 text-sm">向下捲動看看 Tabs 會如何變化～</p>
+        <!-- 內容區域 -->
+        <div class="mt-10 md:mt-6 text-center">
+          <h1 class="text-4xl md:text-5xl font-bold text-sakura tracking-wide mb-4">
+            旅遊手帳
+          </h1>
+          <p class="text-lg text-cocoa/80 mb-8">
+            櫻花季節的每一天，都值得好好記錄 🌸
+          </p>
+
+          <!-- 目前只是佔位，之後放各 Tab 內容 -->
+          <div class="py-16 text-cocoa/60">
+            <i :class="activeTabIcon" class="text-8xl mb-6 block opacity-70"></i>
+            <p class="text-xl">{{ activeTabLabel }} 功能即將展開...</p>
+            <p class="mt-4 text-sm">先從行程規劃開始吧～</p>
+          </div>
         </div>
 
       </div>
     </main>
 
-    <!-- FAB 新增按鈕（暫時無功能） -->
-    <button class="fixed bottom-28 right-8 z-40 w-16 h-16 rounded-full bg-sakura text-white shadow-soft flex items-center justify-center text-3xl hover:bg-sakura/90 active:scale-95 transition transform">
+    <!-- FAB 新增按鈕 -->
+    <button @click="alert('新增行程功能開發中～\n即將支援活動 / 交通兩種卡片')"
+            class="fixed bottom-24 md:bottom-28 right-6 md:right-8 z-50 w-16 h-16 rounded-full bg-sakura text-white shadow-xl flex items-center justify-center text-4xl hover:bg-sakura/90 active:scale-90 transition-all duration-200">
       <i class="fas fa-plus"></i>
     </button>
 
@@ -130,7 +130,7 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
   <script>
-    const { createApp, ref, onMounted } = Vue;
+    const { createApp, ref, computed } = Vue;
 
     createApp({
       setup() {
@@ -138,34 +138,52 @@
         const isScrolled = ref(false);
 
         const tabs = [
-          { id: 'schedule', label: '行程', icon: 'fas fa-calendar-days' },
-          { id: 'nav',      label: '導航', icon: 'fas fa-map' },
-          { id: 'vouchers', label: '憑證', icon: 'fas fa-ticket-simple' },
-          { id: 'list',     label: '清單', icon: 'fas fa-list-check' },
-          { id: 'expense',  label: '記帳', icon: 'fas fa-yen-sign' },
+          { id: 'schedule', label: '行程',   icon: 'fa-solid fa-calendar-days' },
+          { id: 'nav',      label: '導航',   icon: 'fa-solid fa-map-location-dot' },
+          { id: 'vouchers', label: '憑證',   icon: 'fa-solid fa-ticket-simple' },
+          { id: 'list',     label: '清單',   icon: 'fa-solid fa-list-check' },
+          { id: 'expense',  label: '記帳',   icon: 'fa-solid fa-yen-sign' },
         ];
 
-        onMounted(() => {
-          const handleScroll = () => {
-            // 約頁首高度 - 負邊距 ≈ 220\~280px，可依實際調整
-            isScrolled.value = window.scrollY > 240;
-          };
-          window.addEventListener('scroll', handleScroll);
-          handleScroll(); // 初次檢查
-          return () => window.removeEventListener('scroll', handleScroll);
-        });
+        // 捲動監聽：Tabs 位置變化
+        const handleScroll = () => {
+          isScrolled.value = window.scrollY > 180;  // 調整這個值來決定什麼時候切換
+        };
+
+        // 計算目前活躍 Tab 的 icon & label（用於佔位顯示）
+        const activeTab = computed(() => tabs.find(t => t.id === currentTab.value) || tabs[0]);
+        const activeTabIcon  = computed(() => activeTab.value.icon);
+        const activeTabLabel = computed(() => activeTab.value.label);
 
         return {
           currentTab,
           isScrolled,
-          tabs
+          tabs,
+          activeTabIcon,
+          activeTabLabel,
         };
+      },
+
+      mounted() {
+        window.addEventListener('scroll', this.handleScroll);
+        // 初始檢查一次（避免剛載入就錯位）
+        this.handleScroll();
+      },
+
+      beforeUnmount() {
+        window.removeEventListener('scroll', this.handleScroll);
+      },
+
+      methods: {
+        handleScroll() {
+          this.isScrolled = window.scrollY > 180;
+        }
       }
     }).mount('#app');
 
-    // 頁尾標記
+    // 頁尾標記（固定底部）
     document.body.insertAdjacentHTML('beforeend', `
-      <footer class="fixed bottom-0 left-0 right-0 text-center text-xs text-cocoa/50 py-3 bg-beige/80 backdrop-blur-sm z-30 pointer-events-none">
+      <footer class="fixed bottom-0 left-0 right-0 text-center py-3 text-sm text-cocoa/60 bg-beige/80 backdrop-blur-sm z-40 border-t border-sakura/20">
         🌸 Tiffany & Benjamin 🌸
       </footer>
     `);
