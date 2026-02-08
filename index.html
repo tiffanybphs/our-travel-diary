@@ -2,10 +2,10 @@
 <html lang="zh-Hant" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>旅遊手帳・Our Travel Diary</title>
 
-  <!-- PWA -->
+  <!-- PWA 基本設定 -->
   <link rel="manifest" href="data:application/manifest+json,{
     'name': '旅遊手帳',
     'short_name': '旅遊手帳',
@@ -13,216 +13,162 @@
     'display': 'standalone',
     'background_color': '#FFF9E3',
     'theme_color': '#FFD1DC',
-    'icons': [{'src':'icon.png','sizes':'192x192','type':'image/png'}, {'src':'icon.png','sizes':'512x512','type':'image/png'}]
+    'icons': [
+      {'src': 'icon.png', 'sizes': '192x192', 'type': 'image/png'},
+      {'src': 'icon.png', 'sizes': '512x512', 'type': 'image/png'}
+    ]
   }">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-  <!-- Fonts -->
+  <!-- Zen Maru Gothic -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-  <!-- Tailwind CDN -->
+  <!-- Tailwind Play CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { sans: ['Zen Maru Gothic', 'system-ui', 'sans-serif'] },
-          colors: {
-            sakura: '#FFD1DC',
-            beige:  '#FFF9E3',
-            mizuiro:'#B0E0E6',
-            cocoa:  '#D2B48C',
+          fontFamily: {
+            sans: ['Zen Maru Gothic', 'system-ui', 'sans-serif']
           },
-          borderRadius: { '4xl': '2rem', '5xl': '2.5rem' },
+          colors: {
+            sakura:   '#FFD1DC',
+            beige:    '#FFF9E3',
+            mizuiro:  '#B0E0E6',
+            cocoa:    '#D2B48C',
+          },
+          borderRadius: {
+            '4xl': '2rem',
+            '5xl': '2.5rem',
+          },
+          boxShadow: {
+            'soft': '0 10px 25px -5px rgba(255,209,220,0.3)',
+          }
         }
       }
     }
   </script>
 
   <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
-    body { background: #FFF9E3; overscroll-behavior: none; }
-    .card-shadow { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.07); }
+    body {
+      background: #FFF9E3;
+      overscroll-behavior: none;
+    }
+    .backdrop-sakura {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
   </style>
 </head>
-<body class="min-h-screen font-sans antialiased">
+<body class="min-h-screen font-sans antialiased text-cocoa">
 
-  <div id="app" class="relative">
+  <div id="app">
 
-    <!-- 頁首背景 -->
-    <header class="relative h-80 md:h-96 bg-cover bg-center" :style="{ backgroundImage: `url('${splash || 'https://images.unsplash.com/photo-1558445034-055296cc0aca?auto=format&fit=crop&q=80&w=1200'}')` }">
+    <!-- 頁首滿版背景 -->
+    <header class="relative h-[320px] md:h-[400px] bg-cover bg-center bg-no-repeat" 
+            style="background-image: url('splash.jpeg');">
       <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-beige/70"></div>
-      <div class="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-beige to-transparent"></div>
+      <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-beige to-transparent pointer-events-none"></div>
     </header>
 
-    <!-- 主要內容 - 負邊距向上 -->
-    <main class="-mt-28 md:-mt-32 mx-4 md:mx-auto max-w-3xl relative z-10 pb-32">
-      <div class="bg-white/85 backdrop-blur-md rounded-4xl shadow-2xl p-5 md:p-8 border border-sakura/40">
+    <!-- 主要內容區：負邊距向上 + 圓角 + 半透背板 -->
+    <main class="-mt-24 md:-mt-32 mx-4 md:mx-6 lg:mx-auto max-w-3xl relative z-10 pb-40">
+      <div class="bg-white/75 backdrop-sakura rounded-4xl shadow-soft border border-sakura/30 p-6 md:p-8">
 
-        <!-- Tabs (浮動 → sticky) -->
+        <!-- 標題 -->
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-sakura tracking-wide mb-8">
+          旅遊手帳
+        </h1>
+
+        <!-- Tabs：初始浮動右下，捲動後變頂部置中 sticky -->
         <nav :class="[
-          'fixed z-50 transition-all duration-300 ease-in-out',
-          isScrolled
-            ? 'top-3 left-1/2 -translate-x-1/2 w-auto'
+          'fixed z-50 transition-all duration-300 ease-out',
+          isScrolled 
+            ? 'top-3 left-1/2 -translate-x-1/2 scale-95'
             : 'bottom-6 right-6 md:bottom-8 md:right-10'
         ]">
-          <div class="flex bg-white/90 backdrop-blur-lg rounded-full shadow-xl px-2 py-2 border border-sakura/30">
+          <div class="flex bg-white/85 backdrop-sakura rounded-full shadow-soft border border-sakura/40 px-1.5 py-1.5">
             <button v-for="tab in tabs" :key="tab.id"
-              @click="currentTab = tab.id"
-              :class="['flex items-center px-4 py-3 md:px-6 text-cocoa transition-colors',
-                      currentTab === tab.id ? 'text-sakura font-medium' : 'hover:text-sakura/80']"
-            >
+                    @click="currentTab = tab.id"
+                    :class="[
+                      'flex items-center justify-center px-4 py-3 md:px-6 rounded-full transition-colors text-sm md:text-base',
+                      currentTab === tab.id 
+                        ? 'bg-sakura/20 text-sakura font-medium' 
+                        : 'text-cocoa/70 hover:text-sakura hover:bg-sakura/10'
+                    ]">
               <i :class="tab.icon" class="text-xl md:text-2xl"></i>
-              <span class="hidden md:inline ml-2 text-sm md:text-base">{{ tab.label }}</span>
+              <span class="ml-2 hidden md:inline">{{ tab.label }}</span>
             </button>
           </div>
         </nav>
 
-        <!-- 內容區域 -->
-        <div class="mt-6 md:mt-4">
-          <h1 class="text-3xl md:text-4xl font-bold text-center text-sakura mb-6 tracking-wide">旅遊手帳</h1>
-
-          <!-- 行程 Tab -->
-          <div v-if="currentTab === 'schedule'" class="space-y-6">
-            <div v-for="(day, date) in groupedSchedules" :key="date" class="space-y-4">
-              <h2 class="text-xl font-medium text-cocoa/90 pl-2 border-l-4 border-sakura/60">{{ date }}</h2>
-              <draggable v-model="day.items" item-key="id" @end="onDragEnd(date)"
-                :animation="200" :ghost-class="'opacity-50'" handle=".drag-handle">
-                <template #item="{ element: item }">
-                  <div class="relative bg-white rounded-2xl p-4 card-shadow border border-sakura/20 hover:border-sakura/40 transition-all duration-200"
-                    :class="{ 'scale-105 shadow-2xl z-20': draggingItemId === item.id }">
-                    <div class="flex items-start gap-3">
-                      <button class="drag-handle cursor-move text-cocoa/40 hover:text-cocoa mt-1">
-                        <i class="fas fa-grip-vertical text-xl"></i>
-                      </button>
-                      <div class="flex-1">
-                        <div class="font-medium text-lg" :class="item.type === 'transport' ? 'text-mizuiro' : 'text-cocoa'">
-                          {{ item.type === 'transport' ? (item.from + ' → ' + item.to) : item.title }}
-                        </div>
-                        <div class="text-sm text-cocoa/70 mt-1">
-                          {{ formatTime(item.start_time) }} — {{ formatTime(item.end_time) }}
-                          <span class="ml-2 opacity-60">({{ item.duration }})</span>
-                        </div>
-                        <div v-if="item.location" class="text-sm text-sakura mt-1">
-                          <i class="fas fa-map-marker-alt mr-1"></i>{{ item.location }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </draggable>
-            </div>
-
-            <!-- 無資料提示 -->
-            <div v-if="!Object.keys(groupedSchedules).length" class="text-center py-12 text-cocoa/60">
-              還沒有任何行程喔～點擊右下 + 來新增吧 🌸
-            </div>
-          </div>
-
-          <!-- 其他 Tab 佔位 -->
-          <div v-else class="text-center py-20 text-cocoa/50">
-            <i :class="tabs.find(t => t.id === currentTab)?.icon" class="text-6xl mb-4 block"></i>
-            <p class="text-xl">{{ tabs.find(t => t.id === currentTab)?.label }} 功能開發中...</p>
-          </div>
+        <!-- 目前分頁內容區域（之後各分頁放這裡） -->
+        <div class="mt-10 text-center text-cocoa/70">
+          <p class="text-lg mb-4">歡迎使用你的日系櫻花風旅遊手帳 🌸</p>
+          <p class="text-sm opacity-70">目前正在 Phase 1：基本佈局與導航</p>
+          <p class="mt-8 text-sm">向下捲動看看 Tabs 會如何變化～</p>
         </div>
+
       </div>
     </main>
 
-    <!-- FAB -->
-    <button @click="alert('新增行程功能即將實作～')" 
-      class="fixed bottom-28 right-8 z-40 w-16 h-16 rounded-full bg-sakura text-white shadow-2xl flex items-center justify-center text-3xl hover:bg-sakura/90 active:scale-95 transition transform">
+    <!-- FAB 新增按鈕（暫時無功能） -->
+    <button class="fixed bottom-28 right-8 z-40 w-16 h-16 rounded-full bg-sakura text-white shadow-soft flex items-center justify-center text-3xl hover:bg-sakura/90 active:scale-95 transition transform">
       <i class="fas fa-plus"></i>
     </button>
 
   </div>
 
-  <!-- 依序載入必要 library -->
+  <!-- Vue 3 CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vuedraggable@next/dist/vuedraggable.umd.min.js"></script>
 
   <script>
-    const { createApp, ref, computed, watch, onMounted } = Vue;
+    const { createApp, ref, onMounted } = Vue;
 
     createApp({
       setup() {
         const currentTab = ref('schedule');
         const isScrolled = ref(false);
-        const splash = ref(''); // 你可以之後改成本地檔案 './splash.jpeg'
-
-        // 假資料 - 模擬 localStorage
-        const schedules = ref([]);
 
         const tabs = [
           { id: 'schedule', label: '行程', icon: 'fas fa-calendar-days' },
-          { id: 'nav',       label: '導航', icon: 'fas fa-map' },
-          { id: 'vouchers',  label: '憑證', icon: 'fas fa-ticket' },
-          { id: 'list',      label: '清單', icon: 'fas fa-list-check' },
-          { id: 'expense',   label: '記帳', icon: 'fas fa-yen-sign' },
+          { id: 'nav',      label: '導航', icon: 'fas fa-map' },
+          { id: 'vouchers', label: '憑證', icon: 'fas fa-ticket-simple' },
+          { id: 'list',     label: '清單', icon: 'fas fa-list-check' },
+          { id: 'expense',  label: '記帳', icon: 'fas fa-yen-sign' },
         ];
 
-        // 載入 localStorage
         onMounted(() => {
-          const saved = localStorage.getItem('travelDiarySchedules');
-          if (saved) {
-            schedules.value = JSON.parse(saved);
-          } else {
-            // 預設假資料
-            schedules.value = [
-              { id: 1, day_date: '2025-04-10', type: 'activity', title: '淺草寺參拜', start_time: '09:30', duration: '90', end_time: '11:00', location: '淺草寺' },
-              { id: 2, day_date: '2025-04-10', type: 'transport', from: '淺草站', to: '上野站', start_time: '11:15', duration: '15', end_time: '11:30' },
-              { id: 3, day_date: '2025-04-10', type: 'activity', title: '上野公園賞櫻', start_time: '11:45', duration: '120', end_time: '13:45', location: '上野公園' },
-              { id: 4, day_date: '2025-04-11', type: 'activity', title: '晴空塔', start_time: '10:00', duration: '180', end_time: '13:00', location: '東京晴空塔' },
-            ];
-            saveToLocal();
-          }
-
-          window.addEventListener('scroll', () => {
-            isScrolled.value = window.scrollY > 220;
-          });
+          const handleScroll = () => {
+            // 約頁首高度 - 負邊距 ≈ 220\~280px，可依實際調整
+            isScrolled.value = window.scrollY > 240;
+          };
+          window.addEventListener('scroll', handleScroll);
+          handleScroll(); // 初次檢查
+          return () => window.removeEventListener('scroll', handleScroll);
         });
-
-        const saveToLocal = () => {
-          localStorage.setItem('travelDiarySchedules', JSON.stringify(schedules.value));
-        };
-
-        const groupedSchedules = computed(() => {
-          const groups = {};
-          schedules.value.forEach(item => {
-            if (!groups[item.day_date]) groups[item.day_date] = { items: [] };
-            groups[item.day_date].items.push(item);
-          });
-          return groups;
-        });
-
-        const onDragEnd = (date) => {
-          // 這裡之後會呼叫 Time Engine 重新計算時間鏈
-          saveToLocal();
-          console.log('拖拽結束，已儲存排序', date);
-        };
-
-        const formatTime = (time) => time ? time.slice(0,5) : '--:--';
 
         return {
           currentTab,
           isScrolled,
-          tabs,
-          schedules,
-          groupedSchedules,
-          onDragEnd,
-          formatTime,
-          splash,
-          draggingItemId: ref(null), // 之後用來做視覺反饋
+          tabs
         };
       }
-    }).component('draggable', vuedraggable).mount('#app');
+    }).mount('#app');
 
-    // 最後標記
-    document.write('<footer class="text-center text-sm text-cocoa/60 py-12 fixed bottom-0 left-0 right-0 bg-beige/80 backdrop-blur-sm z-30">🌸 Tiffany & Benjamin 🌸</footer>');
+    // 頁尾標記
+    document.body.insertAdjacentHTML('beforeend', `
+      <footer class="fixed bottom-0 left-0 right-0 text-center text-xs text-cocoa/50 py-3 bg-beige/80 backdrop-blur-sm z-30 pointer-events-none">
+        🌸 Tiffany & Benjamin 🌸
+      </footer>
+    `);
   </script>
 
 </body>
