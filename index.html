@@ -65,12 +65,15 @@
 
   <div id="app">
 
-    <!-- 頁首滿版背景圖 -->
-    <header class="relative h-80 md:h-96 w-full bg-cover bg-center bg-no-repeat"
-            style="background-image: url('splash.jpeg');">
-      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-beige/70"></div>
-      <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-beige to-transparent pointer-events-none"></div>
-    </header>
+  <!-- 頁首滿版背景圖 - 改為垂直靠上、水平置中、不裁剪 -->
+  <header class="relative h-[50vh] min-h-[320px] max-h-[420px] w-full overflow-hidden bg-beige">
+    <img 
+      src="splash.jpeg" 
+      alt="櫻花背景" 
+      class="absolute inset-0 w-full h-full object-contain object-top bg-beige"
+    />
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-beige/80 pointer-events-none"></div>
+  </header>
 
     <!-- 主要內容區：負邊距向上 + 圓角 + 半透 -->
     <main class="-mt-20 md:-mt-28 mx-4 md:mx-auto max-w-3xl relative z-10 pb-40">
