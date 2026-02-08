@@ -1,196 +1,89 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" class="scroll-smooth">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>旅遊手帳・Our Travel Diary</title>
-
-  <!-- PWA 基本設定 -->
-  <link rel="manifest" href="data:application/manifest+json,{
-    'name': '旅遊手帳',
-    'short_name': '旅遊手帳',
-    'start_url': '.',
-    'display': 'standalone',
-    'background_color': '#FFF9E3',
-    'theme_color': '#FFD1DC',
-    'icons': [
-      {'src':'icon.png','sizes':'192x192','type':'image/png'},
-      {'src':'icon.png','sizes':'512x512','type':'image/png'}
-    ]
-  }">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-  <!-- Zen Maru Gothic -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@300;400;500;700&display=swap" rel="stylesheet">
-
-  <!-- Tailwind Play CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Zen Maru Gothic', 'system-ui', 'sans-serif']
-          },
-          colors: {
-            sakura:   '#FFD1DC',
-            beige:    '#FFF9E3',
-            mizuiro:  '#B0E0E6',
-            cocoa:    '#D2B48C',
-          },
-          borderRadius: {
-            '4xl': '2rem',
-            '5xl': '2.5rem',
-          },
-          boxShadow: {
-            'soft': '0 10px 25px -5px rgba(255,209,220,0.3)',
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-  <style>
-    body { background-color: #FFF9E3; }
-    .backdrop-smooth { backdrop-filter: blur(12px); }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>旅遊手帳</title>
+  <!-- Tailwind CDN (顏色用 arbitrary 如 bg-[#FFD1DC]) -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Zen Maru Gothic 字體 -->
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <!-- Vue CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- VueDraggable CDN -->
+  <script src="https://unpkg.com/vuedraggable@4.1.0/dist/vuedraggable.umd.min.js"></script>
+  <!-- SheetJS CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="theme-color" content="#FFD1DC">
 </head>
-<body class="min-h-screen font-sans antialiased text-cocoa">
-
+<body class="font-sans antialiased" style="font-family: 'Zen Maru Gothic', sans-serif; background-color: #FFF9E3;">
   <div id="app">
+    <!-- Splash Screen -->
+    <div v-if="loading" class="fixed inset-0 flex items-center justify-center" style="background-color: #FFD1DC;">
+      <img src="splash.jpeg" alt="櫻花啟動" class="w-full h-full object-cover">
+    </div>
 
-  <!-- 頁首滿版背景圖 - 改為垂直靠上、水平置中、不裁剪 -->
-  <header class="relative h-[50vh] min-h-[320px] max-h-[420px] w-full overflow-hidden bg-beige">
-    <img 
-      src="splash.jpeg" 
-      alt="櫻花背景" 
-      class="absolute inset-0 w-full h-full object-contain object-top bg-beige"
-    />
-    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-beige/80 pointer-events-none"></div>
-  </header>
-
-    <!-- 主要內容區：負邊距向上 + 圓角 + 半透 -->
-    <main class="-mt-20 md:-mt-28 mx-4 md:mx-auto max-w-3xl relative z-10 pb-40">
-      <div class="bg-white/75 backdrop-smooth rounded-4xl shadow-soft border border-sakura/30 p-6 md:p-8">
-
-        <!-- Tabs：初始右下浮動 → 捲動後頂部居中 sticky -->
-        <nav :class="[
-          'fixed z-50 transition-all duration-500 ease-out',
-          isScrolled
-            ? 'top-3 left-1/2 -translate-x-1/2 scale-95'
-            : 'bottom-6 right-6 md:bottom-8 md:right-10'
-        ]">
-          <div class="flex bg-white/85 backdrop-smooth rounded-full shadow-xl px-1.5 py-2 border border-sakura/40">
-            <button v-for="tab in tabs" :key="tab.id"
-                    @click="currentTab = tab.id"
-                    :class="[
-                      'flex items-center justify-center px-4 py-3 md:px-6 transition-all',
-                      currentTab === tab.id
-                        ? 'text-sakura scale-110'
-                        : 'text-cocoa/70 hover:text-sakura hover:scale-105'
-                    ]">
-              <i :class="tab.icon" class="text-2xl md:text-3xl"></i>
-              <span class="hidden md:inline ml-2 text-base font-medium">{{ tab.label }}</span>
-            </button>
-          </div>
+    <!-- 頁首: 滿版背景 + 負邊距圓角內容 -->
+    <header class="relative">
+      <img src="header-bg.jpg" alt="櫻花背景" class="w-full h-64 object-cover">
+      <div class="absolute bottom-0 right-4 z-10" v-if="!scrolled">
+        <!-- 初始浮動 Tabs (ICON only) -->
+        <nav class="flex space-x-4">
+          <button v-for="tab in tabs" :key="tab" @click="setTab(tab)" class="bg-white rounded-full p-2 shadow-md">
+            <i :class="getIcon(tab)"></i>
+          </button>
         </nav>
-
-        <!-- 內容區域 -->
-        <div class="mt-10 md:mt-6 text-center">
-          <h1 class="text-4xl md:text-5xl font-bold text-sakura tracking-wide mb-4">
-            旅遊手帳
-          </h1>
-          <p class="text-lg text-cocoa/80 mb-8">
-            櫻花季節的每一天，都值得好好記錄 🌸
-          </p>
-
-          <!-- 目前只是佔位，之後放各 Tab 內容 -->
-          <div class="py-16 text-cocoa/60">
-            <i :class="activeTabIcon" class="text-8xl mb-6 block opacity-70"></i>
-            <p class="text-xl">{{ activeTabLabel }} 功能即將展開...</p>
-            <p class="mt-4 text-sm">先從行程規劃開始吧～</p>
-          </div>
-        </div>
-
       </div>
+    </header>
+
+    <!-- 內容區: 負邊距向上重疊，40px 圓角 -->
+    <main class="bg-white rounded-t-3xl -mt-16 relative z-20 p-4">
+      <!-- Sticky Tabs when scrolled -->
+      <nav v-if="scrolled" class="sticky top-0 bg-white flex justify-around py-2 shadow-md rounded-b-lg">
+        <button v-for="tab in tabs" :key="tab" @click="setTab(tab)" style="color: #D2B48C;">
+          {{ tab }}
+        </button>
+      </nav>
+
+      <!-- Supabase 設定欄位 (UI 填入) -->
+      <div v-if="!supabaseClient" class="mb-4">
+        <input v-model="supabaseUrl" placeholder="Supabase URL" class="border p-2 mb-2 w-full rounded" />
+        <input v-model="anonKey" placeholder="Anon Key" class="border p-2 mb-2 w-full rounded" />
+        <button @click="initSupabase" class="text-white p-2 rounded w-full" style="background-color: #FFD1DC;">連線 Supabase</button>
+      </div>
+
+      <!-- 行程表 (Schedule) 示例 -->
+      <section v-if="currentTab === '行程'">
+        <draggable v-model="scheduleList" handle=".handle" @start="dragging = true" @end="onDragEnd" :delay="1000" :touchStartThreshold="1">
+          <div v-for="item in scheduleList" :key="item.id" class="p-4 mb-4 rounded-lg shadow transition-all duration-200" :class="{'transform scale-105 shadow-lg opacity-100': dragging, 'opacity-50': dragging && !isSelected(item)}" style="background-color: #B0E0E6;">
+            <div class="handle cursor-move mb-2"><i class="fas fa-grip-lines text-gray-500"></i></div>
+            <h3 class="font-bold" v-if="item.type === 'transport'">{{ item.transport_segments && item.transport_segments[0] ? item.transport_segments[0].from_station : '' }} ➜ {{ item.transport_segments && item.transport_segments[item.transport_segments.length-1] ? item.transport_segments[item.transport_segments.length-1].to_station : '' }}</h3>
+            <h3 class="font-bold" v-else>{{ item.title }}</h3>
+            <input v-model="item.start_time" @input="handleTimeInput($event, item, 'start_time')" inputmode="numeric" class="border p-1 rounded w-20" />
+            <input v-model="item.duration" @input="handleTimeInput($event, item, 'duration')" inputmode="numeric" class="border p-1 rounded w-20 ml-2" />
+            <p class="text-sm">結束: {{ item.end_time }}</p>
+            <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`" target="_blank" class="text-blue-500">導航</a>
+          </div>
+        </draggable>
+        <!-- FAB 新增按鈕 (粉紅浮動) -->
+        <button @click="addSchedule" class="fixed bottom-4 right-4 text-white rounded-full w-12 h-12 shadow-lg flex items-center justify-center text-2xl" style="background-color: #FFD1DC;">+</button>
+      </section>
+
+      <!-- 其他 Tabs 示例 (後續擴充) -->
+      <section v-if="currentTab === '導航'">導航內容...</section>
+      <section v-if="currentTab === '憑證'">憑證上傳 <input type="file" @change="uploadImage" class="mt-2" /></section>
+      <section v-if="currentTab === '清單'">購物清單...</section>
+      <section v-if="currentTab === '記帳'">記帳 <button @click="exportExcel" class="text-white p-2 rounded" style="background-color: #FFD1DC;">匯出 Excel</button></section>
     </main>
-
-    <!-- FAB 新增按鈕 -->
-    <button @click="alert('新增行程功能開發中～\n即將支援活動 / 交通兩種卡片')"
-            class="fixed bottom-24 md:bottom-28 right-6 md:right-8 z-50 w-16 h-16 rounded-full bg-sakura text-white shadow-xl flex items-center justify-center text-4xl hover:bg-sakura/90 active:scale-90 transition-all duration-200">
-      <i class="fas fa-plus"></i>
-    </button>
-
   </div>
 
-  <!-- Vue 3 CDN -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-
-  <script>
-    const { createApp, ref, computed } = Vue;
-
-    createApp({
-      setup() {
-        const currentTab = ref('schedule');
-        const isScrolled = ref(false);
-
-        const tabs = [
-          { id: 'schedule', label: '行程',   icon: 'fa-solid fa-calendar-days' },
-          { id: 'nav',      label: '導航',   icon: 'fa-solid fa-map-location-dot' },
-          { id: 'vouchers', label: '憑證',   icon: 'fa-solid fa-ticket-simple' },
-          { id: 'list',     label: '清單',   icon: 'fa-solid fa-list-check' },
-          { id: 'expense',  label: '記帳',   icon: 'fa-solid fa-yen-sign' },
-        ];
-
-        // 捲動監聽：Tabs 位置變化
-        const handleScroll = () => {
-          isScrolled.value = window.scrollY > 180;  // 調整這個值來決定什麼時候切換
-        };
-
-        // 計算目前活躍 Tab 的 icon & label（用於佔位顯示）
-        const activeTab = computed(() => tabs.find(t => t.id === currentTab.value) || tabs[0]);
-        const activeTabIcon  = computed(() => activeTab.value.icon);
-        const activeTabLabel = computed(() => activeTab.value.label);
-
-        return {
-          currentTab,
-          isScrolled,
-          tabs,
-          activeTabIcon,
-          activeTabLabel,
-        };
-      },
-
-      mounted() {
-        window.addEventListener('scroll', this.handleScroll);
-        // 初始檢查一次（避免剛載入就錯位）
-        this.handleScroll();
-      },
-
-      beforeUnmount() {
-        window.removeEventListener('scroll', this.handleScroll);
-      },
-
-      methods: {
-        handleScroll() {
-          this.isScrolled = window.scrollY > 180;
-        }
-      }
-    }).mount('#app');
-
-    // 頁尾標記（固定底部）
-    document.body.insertAdjacentHTML('beforeend', `
-      <footer class="fixed bottom-0 left-0 right-0 text-center py-3 text-sm text-cocoa/60 bg-beige/80 backdrop-blur-sm z-40 border-t border-sakura/20">
-        🌸 Tiffany & Benjamin 🌸
-      </footer>
-    `);
-  </script>
-
+  <script src="app.js"></script>
 </body>
 </html>
