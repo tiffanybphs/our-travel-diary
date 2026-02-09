@@ -1,0 +1,9 @@
+{
+  "name": "旅遊手帳",
+  "short_name": "手帳",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#FFD1DC",
+  "background_color": "#FFF9E3"
+}
