@@ -59,22 +59,58 @@
         <button @click="initSupabase" class="text-white p-2 rounded w-full" style="background-color: #FFD1DC;">連線 Supabase</button>
       </div>
 
-      <!-- 行程表 (Schedule) 示例 -->
-      <section v-if="currentTab === '行程'">
-        <draggable v-model="scheduleList" handle=".handle" @start="dragging = true" @end="onDragEnd" :delay="1000" :touchStartThreshold="1">
-          <div v-for="item in scheduleList" :key="item.id" class="p-4 mb-4 rounded-lg shadow transition-all duration-200" :class="{'transform scale-105 shadow-lg opacity-100': dragging, 'opacity-50': dragging && !isSelected(item)}" style="background-color: #B0E0E6;">
-            <div class="handle cursor-move mb-2"><i class="fas fa-grip-lines text-gray-500"></i></div>
-            <h3 class="font-bold" v-if="item.type === 'transport'">{{ item.transport_segments && item.transport_segments[0] ? item.transport_segments[0].from_station : '' }} ➜ {{ item.transport_segments && item.transport_segments[item.transport_segments.length-1] ? item.transport_segments[item.transport_segments.length-1].to_station : '' }}</h3>
-            <h3 class="font-bold" v-else>{{ item.title }}</h3>
-            <input v-model="item.start_time" @input="handleTimeInput($event, item, 'start_time')" inputmode="numeric" class="border p-1 rounded w-20" />
-            <input v-model="item.duration" @input="handleTimeInput($event, item, 'duration')" inputmode="numeric" class="border p-1 rounded w-20 ml-2" />
-            <p class="text-sm">結束: {{ item.end_time }}</p>
-            <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`" target="_blank" class="text-blue-500">導航</a>
-          </div>
-        </draggable>
-        <!-- FAB 新增按鈕 (粉紅浮動) -->
-        <button @click="addSchedule" class="fixed bottom-4 right-4 text-white rounded-full w-12 h-12 shadow-lg flex items-center justify-center text-2xl" style="background-color: #FFD1DC;">+</button>
-      </section>
+      <!-- 行程表 (Schedule) -->
+<section v-if="currentTab === '行程'">
+  <draggable 
+    v-model="scheduleList" 
+    item-key="id"
+    handle=".handle" 
+    @start="dragging = true" 
+    @end="onDragEnd" 
+    :delay="1000" 
+    :touch-start-threshold="1">
+    
+    <template #item="{ element }">
+      <div class="p-4 mb-4 rounded-lg shadow transition-all duration-200" 
+           :class="{'transform scale-105 shadow-lg': dragging}" 
+           style="background-color: #B0E0E6;">
+        
+        <div class="handle cursor-move mb-2"><i class="fas fa-grip-lines text-gray-500"></i></div>
+        
+        <h3 class="font-bold" v-if="element.type === 'transport'">
+          {{ (element.transport_segments && element.transport_segments[0] ? element.transport_segments[0].from_station : '') }} 
+          ➜ 
+          {{ (element.transport_segments && element.transport_segments[element.transport_segments.length-1] ? element.transport_segments[element.transport_segments.length-1].to_station : '') }}
+        </h3>
+        <h3 class="font-bold" v-else>{{ element.title }}</h3>
+        
+        <input v-model="element.start_time" 
+               @input="handleTimeInput($event, element, 'start_time')" 
+               inputmode="numeric" 
+               class="border p-1 rounded w-20" />
+        
+        <input v-model="element.duration" 
+               @input="handleTimeInput($event, element, 'duration')" 
+               inputmode="numeric" 
+               class="border p-1 rounded w-20 ml-2" />
+        
+        <p class="text-sm">結束: {{ element.end_time }}</p>
+        <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(element.location || '')}`" 
+           target="_blank" class="text-blue-500">導航</a>
+      </div>
+    </template>
+  </draggable>
+
+  <!-- FAB 新增按鈕 -->
+  <button @click="addSchedule" 
+          class="fixed bottom-4 right-4 text-white rounded-full w-12 h-12 shadow-lg flex items-center justify-center text-2xl" 
+          style="background-color: #FFD1DC;">+</button>
+
+  <!-- 如果沒有行程的提示 -->
+  <div v-if="scheduleList.length === 0" class="text-center py-8 text-gray-400">
+    目前沒有行程<br>點擊右下角 + 新增
+  </div>
+</section>
 
       <!-- 其他 Tabs 示例 (後續擴充) -->
       <section v-if="currentTab === '導航'">導航內容...</section>
