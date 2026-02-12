@@ -4,119 +4,99 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>旅遊手帳</title>
-  <!-- Tailwind CDN (顏色用 arbitrary 如 bg-[#FFD1DC]) -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <!-- Zen Maru Gothic 字體 -->
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
-  <!-- FontAwesome CDN -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <!-- Vue CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <!-- VueDraggable CDN -->
   <script src="https://unpkg.com/vuedraggable@4.1.0/dist/vuedraggable.umd.min.js"></script>
-  <!-- SheetJS CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
   <meta name="theme-color" content="#FFD1DC">
 </head>
 <body class="font-sans antialiased" style="font-family: 'Zen Maru Gothic', sans-serif; background-color: #FFF9E3;">
   <div id="app">
-    <!-- Splash Screen -->
+    <!-- Splash -->
     <div v-if="loading" class="fixed inset-0 flex items-center justify-center" style="background-color: #FFD1DC;">
-      <img src="splash.jpeg" alt="櫻花啟動" class="w-full h-full object-cover">
+      <img src="splash.jpeg" alt="Splash" class="w-full h-full object-cover">
     </div>
 
-    <!-- 頁首: 滿版背景 + 負邊距圓角內容 -->
+    <!-- 頁首 -->
     <header class="relative">
       <img src="header-bg.jpg" alt="櫻花背景" class="w-full h-64 object-cover">
       <div class="absolute bottom-0 right-4 z-10" v-if="!scrolled">
-        <!-- 初始浮動 Tabs (ICON only) -->
         <nav class="flex space-x-4">
-          <button v-for="tab in tabs" :key="tab" @click="setTab(tab)" class="bg-white rounded-full p-2 shadow-md">
+          <button v-for="tab in tabs" :key="tab" @click="setTab(tab)" class="bg-white rounded-full p-3 shadow-md">
             <i :class="getIcon(tab)"></i>
           </button>
         </nav>
       </div>
     </header>
 
-    <!-- 內容區: 負邊距向上重疊，40px 圓角 -->
-    <main class="bg-white rounded-t-3xl -mt-16 relative z-20 p-4">
-      <!-- Sticky Tabs when scrolled -->
-      <nav v-if="scrolled" class="sticky top-0 bg-white flex justify-around py-2 shadow-md rounded-b-lg">
-        <button v-for="tab in tabs" :key="tab" @click="setTab(tab)" style="color: #D2B48C;">
-          {{ tab }}
+    <!-- 內容區 - 負邊距圓弧 -->
+    <main class="bg-white rounded-t-[40px] -mt-16 relative z-20 min-h-screen pb-20" style="box-shadow: 0 -10px 15px -3px rgb(0 0 0 / 0.1);">
+      <!-- Sticky Tabs -->
+      <nav v-if="scrolled" class="sticky top-0 bg-white flex justify-around py-3 shadow-md z-30">
+        <button v-for="tab in tabs" :key="tab" @click="setTab(tab)" class="flex flex-col items-center text-xs" style="color: #D2B48C;">
+          <i :class="getIcon(tab) + ' text-lg'"></i>
+          <span>{{ tab }}</span>
         </button>
       </nav>
 
-      <!-- Supabase 設定欄位 (UI 填入) -->
-      <div v-if="!supabaseClient" class="mb-4">
-        <input v-model="supabaseUrl" placeholder="Supabase URL" class="border p-2 mb-2 w-full rounded" />
-        <input v-model="anonKey" placeholder="Anon Key" class="border p-2 mb-2 w-full rounded" />
-        <button @click="initSupabase" class="text-white p-2 rounded w-full" style="background-color: #FFD1DC;">連線 Supabase</button>
+      <!-- Supabase 設定 -->
+      <div v-if="!supabaseClient" class="p-4">
+        <input v-model="supabaseUrl" placeholder="Supabase URL" class="border p-3 mb-3 w-full rounded-2xl" />
+        <input v-model="anonKey" placeholder="Anon Key" class="border p-3 mb-3 w-full rounded-2xl" />
+        <button @click="initSupabase" class="w-full py-3 rounded-2xl text-white font-medium" style="background-color: #FFD1DC;">連線 Supabase</button>
       </div>
 
-      <!-- 行程表 (Schedule) -->
-<section v-if="currentTab === '行程'">
-  <draggable 
-    v-model="scheduleList" 
-    item-key="id"
-    handle=".handle" 
-    @start="dragging = true" 
-    @end="onDragEnd" 
-    :delay="1000" 
-    :touch-start-threshold="1">
-    
-    <template #item="{ element }">
-      <div class="p-4 mb-4 rounded-lg shadow transition-all duration-200" 
-           :class="{'transform scale-105 shadow-lg': dragging}" 
-           style="background-color: #B0E0E6;">
-        
-        <div class="handle cursor-move mb-2"><i class="fas fa-grip-lines text-gray-500"></i></div>
-        
-        <h3 class="font-bold" v-if="element.type === 'transport'">
-          {{ (element.transport_segments && element.transport_segments[0] ? element.transport_segments[0].from_station : '') }} 
-          ➜ 
-          {{ (element.transport_segments && element.transport_segments[element.transport_segments.length-1] ? element.transport_segments[element.transport_segments.length-1].to_station : '') }}
-        </h3>
-        <h3 class="font-bold" v-else>{{ element.title }}</h3>
-        
-        <input v-model="element.start_time" 
-               @input="handleTimeInput($event, element, 'start_time')" 
-               inputmode="numeric" 
-               class="border p-1 rounded w-20" />
-        
-        <input v-model="element.duration" 
-               @input="handleTimeInput($event, element, 'duration')" 
-               inputmode="numeric" 
-               class="border p-1 rounded w-20 ml-2" />
-        
-        <p class="text-sm">結束: {{ element.end_time }}</p>
-        <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(element.location || '')}`" 
-           target="_blank" class="text-blue-500">導航</a>
+      <!-- Tabs 內容 -->
+      <div class="p-4">
+        <!-- 行程 -->
+        <section v-if="currentTab === '行程'">
+          <draggable v-model="scheduleList" item-key="id" handle=".handle" @start="dragging=true" @end="onDragEnd" :delay="1000" :touch-start-threshold="1">
+            <template #item="{ element }">
+              <div class="p-5 mb-4 rounded-3xl shadow transition-all" 
+                   :class="{'scale-105 shadow-2xl': dragging && selectedId === element.id, 'opacity-40': dragging && selectedId !== element.id}" 
+                   style="background-color: #B0E0E6;">
+                <div class="handle cursor-move mb-3"><i class="fas fa-grip-lines text-gray-600"></i></div>
+                
+                <h3 class="font-bold text-lg" v-if="element.type === 'transport'">
+                  {{ getTransportTitle(element) }}
+                </h3>
+                <h3 class="font-bold text-lg" v-else>{{ element.title }}</h3>
+                
+                <div class="flex gap-3 mt-3">
+                  <input v-model="element.start_time" @input="handleTimeInput($event, element, 'start_time')" inputmode="numeric" class="border p-2 rounded-xl w-24" />
+                  <input v-model="element.duration" @input="handleTimeInput($event, element, 'duration')" inputmode="numeric" class="border p-2 rounded-xl w-24" />
+                </div>
+                <p class="text-sm mt-1">結束: {{ element.end_time || '--:--' }}</p>
+                <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(element.location || '')}`" target="_blank" class="text-blue-600">🗺️ 導航</a>
+              </div>
+            </template>
+          </draggable>
+
+          <button @click="addSchedule" class="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-xl" style="background-color: #FFD1DC; color: white;">+</button>
+        </section>
+
+        <!-- 其他 Tabs（基本實現） -->
+        <section v-if="currentTab === '導航'"><p class="text-center py-10 text-gray-400">地圖導航模組開發中...</p></section>
+        <section v-if="currentTab === '憑證'">
+          <input type="file" @change="uploadVoucher" class="block w-full" />
+          <p class="text-sm text-gray-500 mt-2">上傳航班/住宿憑證照片</p>
+        </section>
+        <section v-if="currentTab === '清單'">
+          <div v-for="item in shoppingList" :key="item.id" class="flex items-center gap-3 p-4 bg-white rounded-2xl mb-3 shadow">
+            <input type="checkbox" v-model="item.is_bought" />
+            <span>{{ item.item_name }}</span>
+          </div>
+          <button @click="addShoppingItem" class="text-sm py-2 px-4 rounded-2xl" style="background-color: #FFD1DC;">+ 新增物品</button>
+        </section>
+        <section v-if="currentTab === '記帳'">
+          <button @click="exportExcel" class="py-3 px-6 rounded-2xl text-white" style="background-color: #FFD1DC;">匯出 Excel 時間軸</button>
+        </section>
       </div>
-    </template>
-  </draggable>
-
-  <!-- FAB 新增按鈕 -->
-  <button @click="addSchedule" 
-          class="fixed bottom-4 right-4 text-white rounded-full w-12 h-12 shadow-lg flex items-center justify-center text-2xl" 
-          style="background-color: #FFD1DC;">+</button>
-
-  <!-- 如果沒有行程的提示 -->
-  <div v-if="scheduleList.length === 0" class="text-center py-8 text-gray-400">
-    目前沒有行程<br>點擊右下角 + 新增
-  </div>
-</section>
-
-      <!-- 其他 Tabs 示例 (後續擴充) -->
-      <section v-if="currentTab === '導航'">導航內容...</section>
-      <section v-if="currentTab === '憑證'">憑證上傳 <input type="file" @change="uploadImage" class="mt-2" /></section>
-      <section v-if="currentTab === '清單'">購物清單...</section>
-      <section v-if="currentTab === '記帳'">記帳 <button @click="exportExcel" class="text-white p-2 rounded" style="background-color: #FFD1DC;">匯出 Excel</button></section>
     </main>
   </div>
 
