@@ -22,11 +22,17 @@
       <img src="splash.jpeg" alt="櫻花啟動" class="w-full h-full object-cover">
     </div>
 
-    <!-- 頁首：滿版背景 + 負邊距圓弧 -->
+    <!-- Header -->
     <header class="relative">
-      <img src="header-bg.jpg" alt="櫻花背景" class="w-full h-64 object-cover">
-      <div class="absolute bottom-0 right-4 z-10" v-if="!scrolled">
-        <nav class="flex space-x-4">
+      <img src="header-bg.jpg" alt="櫻花背景" class="w-full h-56 object-cover">
+      <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] -mt-8 relative z-20 p-4">
+        <h1 class="text-2xl font-bold text-center" style="color: #D2B48C;">{{ tripData.title }}</h1>
+        <p class="text-center text-sm" style="color: #B0E0E6;">{{ tripData.start_date }} - {{ tripData.end_date }}</p>
+      </div>
+
+      <!-- 初始浮動 Tabs -->
+      <div class="absolute bottom-4 right-4 z-30" v-if="!scrolled">
+        <nav class="flex space-x-3">
           <button v-for="tab in tabs" :key="tab" @click="setTab(tab)" class="bg-white rounded-full p-3 shadow-md">
             <i :class="getIcon(tab)"></i>
           </button>
@@ -34,8 +40,8 @@
       </div>
     </header>
 
-    <!-- 內容區：負邊距 + 40px 圓角 -->
-    <main class="bg-white rounded-t-[40px] -mt-16 relative z-20 min-h-screen pb-20" style="box-shadow: 0 -10px 15px -3px rgb(0 0 0 / 0.1);">
+    <!-- 內容區 -->
+    <main class="bg-white rounded-t-[40px] -mt-8 relative z-20 min-h-screen pb-20">
       <!-- Sticky Tabs -->
       <nav v-if="scrolled" class="sticky top-0 bg-white flex justify-around py-3 shadow-md z-30">
         <button v-for="tab in tabs" :key="tab" @click="setTab(tab)" class="flex flex-col items-center text-xs" style="color: #D2B48C;">
@@ -48,63 +54,70 @@
       <div v-if="!supabaseClient" class="p-4">
         <input v-model="supabaseUrl" placeholder="Supabase URL" class="border p-3 mb-3 w-full rounded-2xl" />
         <input v-model="anonKey" placeholder="Anon Key" class="border p-3 mb-3 w-full rounded-2xl" />
-        <button @click="initSupabase" class="w-full py-3 rounded-2xl text-white font-medium" style="background-color: #FFD1DC;">連線 Supabase</button>
+        <button @click="initSupabase" class="w-full py-3 rounded-2xl text-white" style="background-color: #FFD1DC;">連線 Supabase</button>
       </div>
 
-      <!-- 行程 Tab（徹底依 Part 1 實作） -->
+      <!-- 行程 Tab -->
       <section v-if="currentTab === '行程'" class="p-4">
-        <draggable v-model="scheduleList" item-key="id" handle=".handle" @start="onDragStart" @end="onDragEnd" :delay="1000" :touch-start-threshold="1">
+        <!-- 日期 Tab -->
+        <div class="flex overflow-x-auto gap-3 pb-3 hide-scrollbar">
+          <button v-for="(day, i) in days" :key="i" @click="currentDayIndex = i"
+                  class="px-5 py-2 rounded-3xl whitespace-nowrap text-sm font-medium transition"
+                  :class="currentDayIndex === i ? 'bg-[#FFD1DC] text-white' : 'bg-white shadow'">
+            {{ day.label }}
+          </button>
+        </div>
+
+        <!-- 當日行程 -->
+        <draggable v-model="currentDaySchedules" item-key="id" handle=".handle" @start="onDragStart" @end="onDragEnd" :delay="1000" :touch-start-threshold="1">
           <template #item="{ element }">
-            <div class="p-5 mb-4 rounded-3xl shadow transition-all duration-200" 
+            <div @click="editItem(element)" class="p-5 mb-4 rounded-3xl shadow transition-all" 
                  :class="{'scale-105 shadow-2xl ring-2 ring-[#FFD1DC]': dragging && selectedId === element.id, 'opacity-40': dragging && selectedId !== element.id}" 
                  style="background-color: #B0E0E6;">
-              
-              <div class="handle cursor-move mb-3"><i class="fas fa-grip-lines text-gray-600"></i></div>
-              
-              <!-- Transport 卡片標題 -->
-              <h3 class="font-bold text-lg" v-if="element.type === 'transport'">
-                {{ getTransportTitle(element) }}
-              </h3>
-              <!-- Activity 卡片標題 -->
-              <h3 class="font-bold text-lg" v-else>{{ element.title }}</h3>
-              
-              <div class="flex gap-3 mt-4">
-                <input v-model="element.start_time" 
-                       @input="handleTimeInput($event, element, 'start_time')" 
-                       inputmode="numeric" 
-                       class="border border-white bg-white p-3 rounded-2xl w-28 text-center focus:outline-none" />
-                <input v-model="element.duration" 
-                       @input="handleTimeInput($event, element, 'duration')" 
-                       inputmode="numeric" 
-                       class="border border-white bg-white p-3 rounded-2xl w-28 text-center focus:outline-none" />
+              <div class="handle cursor-move mb-3"><i class="fas fa-grip-lines"></i></div>
+              <h3 class="font-bold text-lg">{{ element.type === 'transport' ? getTransportTitle(element) : element.title }}</h3>
+              <div class="flex gap-3 mt-3">
+                <input v-model="element.start_time" @input="handleTimeInput($event, element)" inputmode="numeric" class="bg-white p-2 rounded-xl w-24 text-center" />
+                <input v-model="element.duration" @input="handleTimeInput($event, element)" inputmode="numeric" class="bg-white p-2 rounded-xl w-24 text-center" />
               </div>
-              
-              <p class="mt-3 text-sm font-medium">結束時間：{{ element.end_time || '--:--' }}</p>
-              
-              <a v-if="element.location" 
-                 :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(element.location)}`" 
-                 target="_blank" 
-                 class="inline-block mt-3 text-blue-600">🗺️ 導航到 {{ element.location }}</a>
+              <p class="text-sm mt-2">結束：{{ element.end_time }}</p>
+              <a v-if="element.location" :href="getMapUrl(element.location)" target="_blank" class="text-blue-600">🗺️ 導航</a>
             </div>
           </template>
         </draggable>
 
-        <!-- FAB -->
-        <button @click="addSchedule" 
-                class="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-xl" 
-                style="background-color: #FFD1DC; color: white;">+</button>
-
-        <div v-if="scheduleList.length === 0" class="text-center py-12 text-gray-400">
-          還沒有行程喔～<br>點擊右下角 + 新增
+        <!-- 有待編入行程區 -->
+        <div class="mt-8">
+          <p class="text-sm font-medium mb-3" style="color: #D2B48C;">有待編入行程</p>
+          <draggable v-model="pendingSchedules" item-key="id" group="schedules" @end="moveToDay">
+            <template #item="{ element }">
+              <div @click="editItem(element)" class="p-4 mb-3 rounded-2xl bg-white shadow text-sm">
+                {{ element.title || getTransportTitle(element) }}
+              </div>
+            </template>
+          </draggable>
         </div>
+
+        <!-- FAB -->
+        <button @click="showAddModal = true" class="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-xl" style="background-color: #FFD1DC; color: white;">+</button>
       </section>
 
-      <!-- 其他 Tab（簡化版，後續可擴充） -->
-      <section v-if="currentTab === '導航'" class="p-4 text-center py-10 text-gray-400">導航頁面開發中...</section>
+      <!-- 其他 Tab 占位 -->
+      <section v-if="currentTab === '導航'" class="p-4">導航頁面開發中...</section>
       <section v-if="currentTab === '憑證'" class="p-4">憑證上傳 <input type="file" @change="uploadVoucher" /></section>
       <section v-if="currentTab === '清單'" class="p-4">購物清單...</section>
       <section v-if="currentTab === '記帳'" class="p-4"><button @click="exportExcel" class="py-3 px-6 rounded-2xl text-white" style="background-color: #FFD1DC;">匯出 Excel</button></section>
     </main>
+
+    <!-- 新增/編輯 Modal -->
+    <div v-if="showAddModal || editingItem" class="fixed inset-0 bg-black/60 flex items-end">
+      <div class="bg-white w-full rounded-t-3xl p-6 max-h-[85vh] overflow-auto">
+        <!-- Modal 內容表單（景點/活動 或 交通） -->
+        <!-- 這裡省略詳細表單以保持簡潔，實際可再展開 -->
+        <button @click="saveEditedItem" class="w-full py-3 rounded-2xl text-white" style="background-color: #FFD1DC;">儲存</button>
+        <button @click="cancelEdit" class="w-full py-3 mt-2 text-gray-500">取消</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
