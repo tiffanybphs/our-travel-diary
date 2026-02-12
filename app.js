@@ -67,10 +67,10 @@ const app = createApp({
         if (list[i + 1]) list[i + 1].start_time = current.end_time;
       }
     },
-    // Drag & Drop (長按1秒, 視覺)
+    // Drag & Drop
     onDragEnd() {
       this.dragging = false;
-      this.updateScheduleChain(this.scheduleList, 0);
+      this.updateScheduleChain(this.scheduleList, 0); // 骨牌式重新計算
       this.saveOrderToSupabase();
     },
     isSelected(item) { return true; }, // 簡化
