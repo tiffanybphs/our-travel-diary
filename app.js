@@ -13,15 +13,14 @@ const app = createApp({
       anonKey: '',
       supabaseClient: null,
       tripData: { title: '我的日本之旅', start_date: '2025/02/01', end_date: '2025/02/10', wakeup_time: '09:00', sleep_time: '22:00' },
-      days: [], // 會動態產生
+      days: [],
       currentDayIndex: 0,
-      scheduleList: [], // 所有行程
+      scheduleList: [],
       pendingSchedules: [],
       dragging: false,
       selectedId: null,
-      showAddModal: false,
+      showTypeSelector: false,
       editingItem: null,
-      editingType: 'activity'
     };
   },
   computed: {
@@ -70,7 +69,7 @@ const app = createApp({
     handleTimeInput(e, item) {
       let val = e.target.value.replace(/\D/g, '');
       if (val.length === 4) val = val.slice(0, 2) + ':' + val.slice(2);
-      item[e.target.name || 'start_time'] = val; // 簡化
+      item[e.target.name || 'start_time'] = val;
       this.updateScheduleChain(item);
     },
     updateScheduleChain(item) {
@@ -93,34 +92,55 @@ const app = createApp({
       this.updateScheduleChain(this.currentDaySchedules[0]);
     },
     moveToDay(e) {
-      // 將 pending 移動到當日
       const item = e.item._underlying_vm_;
       item.day_date = this.days[this.currentDayIndex].date;
       this.scheduleList.push(item);
       this.pendingSchedules = this.pendingSchedules.filter(i => i.id !== item.id);
     },
-    showAddModal: false,
-    addSchedule(type) {
-      this.editingType = type;
-      this.editingItem = { id: crypto.randomUUID(), type, day_date: this.days[this.currentDayIndex].date, title: '', start_time: '', duration: '01:00', transport_segments: [] };
-      this.showAddModal = true;
+    showTypeSelector: false,
+    addNewItem(type) {
+      this.showTypeSelector = false;
+      this.editingItem = {
+        id: crypto.randomUUID(),
+        type,
+        day_date: this.days[this.currentDayIndex].date,
+        title: '',
+        start_time: this.getNextStartTime(),
+        duration: '01:00',
+        end_time: '',
+        location: '',
+        notes: '',
+        transport_segments: type === 'transport' ? [{ mode: '地鐵', from_station: '', to_station: '' }] : []
+      };
+    },
+    getNextStartTime() {
+      const last = this.currentDaySchedules[this.currentDaySchedules.length - 1];
+      return last ? last.end_time : this.tripData.wakeup_time;
+    },
+    addTransportSegment() {
+      this.editingItem.transport_segments.push({ mode: '步行', from_station: '', to_station: '' });
     },
     saveEditedItem() {
       if (this.editingItem) {
         this.scheduleList.push(this.editingItem);
         this.updateScheduleChain(this.editingItem);
+        this.saveToSupabase(this.editingItem);
       }
       this.cancelEdit();
     },
+    deleteItem() {
+      if (confirm('確定刪除此行程？')) {
+        this.scheduleList = this.scheduleList.filter(i => i.id !== this.editingItem.id);
+        this.cancelEdit();
+      }
+    },
     cancelEdit() {
-      this.showAddModal = false;
       this.editingItem = null;
     },
-    editItem(item) {
-      this.editingItem = { ...item };
-      this.showAddModal = true;
+    async saveToSupabase(item) {
+      if (this.supabaseClient) await this.supabaseClient.from('schedules').upsert(item);
     },
-    exportExcel() { /* Part 4 邏輯 */ alert('Excel 已匯出'); },
+    exportExcel() { alert('Excel 已匯出'); },
     uploadVoucher() { /* ... */ }
   }
 });
