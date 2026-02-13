@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -59,11 +60,13 @@
 
       <!-- 行程 Tab -->
       <section v-if="currentTab === '行程'" class="p-4">
-        <!-- 日期 Tab -->
+        <!-- 日期 Tab（已優化顏色） -->
         <div class="flex overflow-x-auto gap-3 pb-3 hide-scrollbar">
           <button v-for="(day, i) in days" :key="i" @click="currentDayIndex = i"
-                  class="px-5 py-2 rounded-3xl whitespace-nowrap text-sm font-medium transition"
-                  :class="currentDayIndex === i ? 'bg-[#FFD1DC] text-white' : 'bg-white shadow'">
+                  class="px-6 py-2.5 rounded-3xl whitespace-nowrap text-sm font-medium transition-all"
+                  :class="currentDayIndex === i 
+                    ? 'bg-[#FFD1DC] text-white shadow-md' 
+                    : 'bg-white text-[#D2B48C] border border-[#FFF9E3]'">
             {{ day.label }}
           </button>
         </div>
@@ -71,7 +74,7 @@
         <!-- 當日行程 -->
         <draggable v-model="currentDaySchedules" item-key="id" handle=".handle" @start="onDragStart" @end="onDragEnd" :delay="1000" :touch-start-threshold="1">
           <template #item="{ element }">
-            <div @click="editItem(element)" class="p-5 mb-4 rounded-3xl shadow transition-all" 
+            <div @click="editItem(element)" class="p-5 mb-4 rounded-3xl shadow transition-all duration-200" 
                  :class="{'scale-105 shadow-2xl ring-2 ring-[#FFD1DC]': dragging && selectedId === element.id, 'opacity-40': dragging && selectedId !== element.id}" 
                  style="background-color: #B0E0E6;">
               <div class="handle cursor-move mb-3"><i class="fas fa-grip-lines"></i></div>
@@ -99,22 +102,62 @@
         </div>
 
         <!-- FAB -->
-        <button @click="showAddModal = true" class="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-xl" style="background-color: #FFD1DC; color: white;">+</button>
+        <button @click="showTypeSelector = true" class="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-xl" style="background-color: #FFD1DC; color: white;">+</button>
       </section>
 
-      <!-- 其他 Tab 占位 -->
+      <!-- 其他 Tab -->
       <section v-if="currentTab === '導航'" class="p-4">導航頁面開發中...</section>
       <section v-if="currentTab === '憑證'" class="p-4">憑證上傳 <input type="file" @change="uploadVoucher" /></section>
       <section v-if="currentTab === '清單'" class="p-4">購物清單...</section>
       <section v-if="currentTab === '記帳'" class="p-4"><button @click="exportExcel" class="py-3 px-6 rounded-2xl text-white" style="background-color: #FFD1DC;">匯出 Excel</button></section>
     </main>
 
-    <!-- 新增/編輯 Modal -->
-    <div v-if="showAddModal || editingItem" class="fixed inset-0 bg-black/60 flex items-end">
+    <!-- 類型選擇 Modal -->
+    <div v-if="showTypeSelector" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-white rounded-3xl p-6 w-80">
+        <p class="text-center text-lg font-medium mb-6">新增什麼行程？</p>
+        <button @click="addNewItem('activity')" class="w-full py-4 rounded-2xl mb-3 text-white" style="background-color: #FFD1DC;">景點 / 活動</button>
+        <button @click="addNewItem('transport')" class="w-full py-4 rounded-2xl text-white" style="background-color: #B0E0E6;">交通</button>
+        <button @click="showTypeSelector = false" class="w-full py-3 mt-4 text-gray-500">取消</button>
+      </div>
+    </div>
+
+    <!-- 編輯 Modal -->
+    <div v-if="editingItem" class="fixed inset-0 bg-black/60 flex items-end z-50">
       <div class="bg-white w-full rounded-t-3xl p-6 max-h-[85vh] overflow-auto">
-        <!-- Modal 內容表單（景點/活動 或 交通） -->
-        <!-- 這裡省略詳細表單以保持簡潔，實際可再展開 -->
-        <button @click="saveEditedItem" class="w-full py-3 rounded-2xl text-white" style="background-color: #FFD1DC;">儲存</button>
+        <h2 class="text-xl font-bold mb-4">{{ editingItem.type === 'transport' ? '新增/編輯交通' : '新增/編輯行程' }}</h2>
+        
+        <!-- 活動表單 -->
+        <template v-if="editingItem.type === 'activity'">
+          <input v-model="editingItem.title" placeholder="行程名稱 *" class="border p-3 w-full rounded-2xl mb-3" />
+          <input v-model="editingItem.start_time" placeholder="開始時間 (HH:mm)" inputmode="numeric" class="border p-3 w-full rounded-2xl mb-3" />
+          <input v-model="editingItem.duration" placeholder="時長 (HH:mm)" inputmode="numeric" class="border p-3 w-full rounded-2xl mb-3" />
+          <input v-model="editingItem.location" placeholder="地點" class="border p-3 w-full rounded-2xl mb-3" />
+          <textarea v-model="editingItem.notes" placeholder="備註" class="border p-3 w-full rounded-2xl h-20"></textarea>
+        </template>
+
+        <!-- 交通表單 -->
+        <template v-if="editingItem.type === 'transport'">
+          <input v-model="editingItem.title" placeholder="起始地 ➜ 最終目的地" class="border p-3 w-full rounded-2xl mb-3" />
+          <div v-for="(seg, idx) in editingItem.transport_segments" :key="idx" class="border p-4 rounded-2xl mb-3">
+            <select v-model="seg.mode" class="border p-2 w-full rounded-xl mb-2">
+              <option value="步行">步行</option>
+              <option value="地鐵">地鐵</option>
+              <option value="捷運">捷運</option>
+              <option value="火車">火車</option>
+              <option value="飛機">飛機</option>
+              <!-- 更多選項 -->
+            </select>
+            <input v-model="seg.from_station" placeholder="出發站" class="border p-2 w-full rounded-xl" />
+            <input v-model="seg.to_station" placeholder="到達站" class="border p-2 w-full rounded-xl mt-2" />
+          </div>
+          <button @click="addTransportSegment" class="text-sm py-2 px-4 rounded-2xl" style="background-color: #FFD1DC;">+ 新增轉乘段</button>
+        </template>
+
+        <div class="flex gap-3 mt-6">
+          <button @click="saveEditedItem" class="flex-1 py-4 rounded-2xl text-white" style="background-color: #FFD1DC;">儲存</button>
+          <button @click="deleteItem" class="flex-1 py-4 rounded-2xl border border-red-300 text-red-500">刪除</button>
+        </div>
         <button @click="cancelEdit" class="w-full py-3 mt-2 text-gray-500">取消</button>
       </div>
     </div>
