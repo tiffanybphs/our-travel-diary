@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { Calendar, Map, Ticket, ShoppingBag, Wallet, Plus, Save, Settings } from 'lucide-react';
 
 // --- 配置區：請在此填入你的 Supabase 資料 ---
-const SUPABASE_URL = "你的_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "你的_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://sofrkrzjaoitgwtjqhfj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvZnJrcnpqYW9pdGd3dGpxaGZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzUxMTksImV4cCI6MjA4NTc1MTExOX0.U7U_vqygT8RaT9dO-dXde2t5kNardyKaOGuxDko3Ss8";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function App() {
