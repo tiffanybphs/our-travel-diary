@@ -2,7 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  /* 隱藏網頁預設的滾動條，讓整體更像原生手機 App */
+  scrollbar-width: none; 
 }
-
+body::-webkit-scrollbar {
+  display: none;
+}
