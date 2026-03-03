@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 指令配色硬編碼，確保樣式一致性 */
+    --sakura-pink: #FFB7C5;
+    --handbook-beige: #FFF8E7;
+    --cocoa-brown: #8B736D;
+    --powder-blue: #BBDDF0;
+  }
+
+  html, body {
+    @apply antialiased text-cocoa-brown bg-handbook-beige;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    /* M1-2: 鎖定手機滾動，防止不必要的左右晃動 */
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 🌸 移除手機點擊時的藍色框，符合 M1-4 原生感要求 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  /* M1-1: 日式圓角卡片基礎樣式 */
+  .sakura-card {
+    @apply bg-white rounded-card shadow-soft border-2 border-sakura-pink/10 transition-all duration-300;
+  }
+
+  /* M1-4: 可愛風格按鈕與點擊反饋 */
+  .cute-button {
+    @apply rounded-button px-6 py-2 bg-sakura-pink text-white font-bold 
+           transition-all duration-200 active:scale-95 hover:brightness-105
+           shadow-sm active:shadow-inner flex items-center justify-center gap-2;
+  }
+
+  /* M4-5: 行程時間軸 (Timeline) 的視覺線條 */
+  .timeline-line {
+    @apply absolute left-4 top-0 bottom-0 w-0.5 bg-sakura-pink/30 border-dashed border-l-2;
+  }
+
+  /* M6-2: 櫻花花瓣填充進度條樣式 */
+  .cherry-progress-container {
+    @apply w-full h-4 bg-white/50 rounded-full overflow-hidden border border-sakura-pink/20;
+  }
+  
+  .cherry-progress-bar {
+    @apply h-full bg-gradient-to-r from-sakura-pink to-sakura-pink/80 transition-all duration-1000 ease-out;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><text y="15" font-size="12">🌸</text></svg>');
+    background-repeat: repeat-x;
+    background-size: 16px;
+  }
+
+  /* M7-1: Excel 網格 15 分鐘一格的基礎樣式 */
+  .excel-grid-row {
+    @apply border-b border-cocoa-brown/10 min-h-[40px] flex items-center px-2 text-xs;
+  }
+
+  /* M1-3: Header 背景專用遮罩，確保文字清楚 */
+  .header-bg-overlay {
+    background: linear-gradient(180deg, rgba(255,183,197,0.4) 0%, rgba(255,248,231,1) 100%);
+    @apply absolute inset-0 z-0;
+  }
+}
+
+@layer utilities {
+  /* 🛡️ M7-4: Debug / Safety Render 區樣式 */
+  .safety-zone {
+    @apply fixed bottom-2 right-4 text-[10px] text-cocoa-brown/30 font-medium pointer-events-none z-[999];
+  }
+
+  /* 📱 M5-4: 確保 Table 在手機不溢出且可橫向捲動 */
+  .mobile-scroll-table {
+    @apply overflow-x-auto whitespace-nowrap scrollbar-hide;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 🪄 自訂捲軸樣式 (日系可愛風) */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-sakura-pink/40 rounded-full;
+  }
+}
+
+/* 🎨 動態元素：M4-1 手風琴與過場 */
+.accordion-content {
+  @apply overflow-hidden transition-all duration-500 ease-in-out;
+}
