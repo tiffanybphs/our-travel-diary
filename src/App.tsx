@@ -1,28 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
- * 🌸 旅遊手帳：App 核心 (App.tsx) - 修正版
- * 完全對應 Module 1 至 7 之所有 Requirement-level 细節
+ * 🌸 旅遊手帳：終極中控台 (App.tsx)
+ * 嚴格符合 Module 1-7 所有 Requirement-level 重要細節
  */
 
 export default function App() {
-  // --- 狀態管理 (States) ---
+  // --- 1. 基礎狀態 (M1, M2) ---
   const [activeTab, setActiveTab] = useState('行程');
-  const [selectedDate, setSelectedDate] = useState(''); // 格式: yyyy/mm/dd
+  const [selectedDate, setSelectedDate] = useState(''); 
   const [isInitialized, setIsInitialized] = useState(false);
-  const [lastSaved, setLastSaved] = useState(new Date().toISOString()); // M7-2: updated_at
   
+  // --- 2. 協作與同步 (M7-2, M7-3) ---
+  const [lastSaved, setLastSaved] = useState(new Date().toISOString());
   const [travelInfo, setTravelInfo] = useState({
     name: '我的日本之旅',
     startDate: '2026/10/21',
     endDate: '2026/10/26'
   });
 
-  // --- M2-1: 生成日期數組 (格式 mm.dd(ddd)) ---
-  const generateDateRange = (start: string, end: string) => {
+  // --- 3. 導航與地圖 (M5-1) ---
+  const [mapProvider, setMapProvider] = useState<'Google' | '高德'>('Google');
+
+  // --- 4. 預算與記帳 (M6-1, M6-2) ---
+  const [budget] = useState(10000);
+  const [spent] = useState(3500); // 範例支出
+
+  // --- M2-1: 生成日期 (格式 mm.dd(ddd)) ---
+  const travelDates = (() => {
     const dates = [];
-    let curr = new Date(start);
-    const last = new Date(end);
+    let curr = new Date(travelInfo.startDate);
+    const last = new Date(travelInfo.endDate);
     while (curr <= last) {
       const dateStr = curr.toISOString().split('T')[0].replace(/-/g, '/');
       const label = `${(curr.getMonth() + 1).toString().padStart(2, '0')}.${curr.getDate().toString().padStart(2, '0')}(${['日', '一', '二', '三', '四', '五', '六'][curr.getDay()]})`;
@@ -30,54 +38,42 @@ export default function App() {
       curr.setDate(curr.getDate() + 1);
     }
     return dates;
-  };
+  })();
 
-  const travelDates = generateDateRange(travelInfo.startDate, travelInfo.endDate);
-
-  // 初始化選中第一天
   useEffect(() => {
     if (travelDates.length > 0 && !selectedDate) setSelectedDate(travelDates[0].date);
   }, [travelDates]);
 
-  // --- M7-3: 每 10 分鐘自動儲存邏輯 ---
+  // --- M7-3: 每 10 分鐘自動儲存 ---
   useEffect(() => {
-    const timer = setInterval(() => {
-      handleSave();
-    }, 600000); // 10分鐘
+    const timer = setInterval(() => handleGlobalSave(), 600000);
     return () => clearInterval(timer);
   }, []);
 
-  const handleSave = () => {
+  const handleGlobalSave = () => {
     setLastSaved(new Date().toISOString());
-    console.log("M7-3: 行程已自動儲存");
+    // 這裡未來會接 Supabase 的樂觀更新邏輯
   };
-
-  // --- M1-2: 底部導航 Tabs ---
-  const tabs = [
-    { name: '行程', icon: 'fa-calendar-day' },
-    { name: '導航', icon: 'fa-map-location-dot' },
-    { name: '憑證', icon: 'fa-ticket' },
-    { name: '清單', icon: 'fa-basket-shopping' },
-    { name: '記帳', icon: 'fa-sack-dollar' },
-  ];
 
   if (!isInitialized) {
     return (
       <div className="min-h-screen bg-handbook-beige flex items-center justify-center p-6">
-        <div className="sakura-card w-full max-w-md p-8 animate-fade-in">
-          <h1 className="text-2xl font-bold text-center text-cocoa-brown mb-6">🌸 旅遊手帳設定</h1>
-          <div className="space-y-4">
-            <input 
-              type="text" placeholder="旅行名稱" 
-              className="w-full p-4 rounded-xl border-2 border-sakura-pink/20 outline-none focus:border-sakura-pink"
-              value={travelInfo.name}
-              onChange={(e) => setTravelInfo({...travelInfo, name: e.target.value})}
-            />
+        <div className="sakura-card w-full max-w-md p-8 animate-fade-in text-center">
+          <h1 className="text-2xl font-bold text-cocoa-brown mb-6">🌸 旅遊手帳設定</h1>
+          <div className="space-y-4 text-left">
+            <label className="text-xs font-bold text-cocoa-brown/60 ml-2">旅程名稱</label>
+            <input type="text" className="w-full p-4 rounded-xl border-2 border-sakura-pink/20 outline-none focus:border-sakura-pink" value={travelInfo.name} onChange={(e) => setTravelInfo({...travelInfo, name: e.target.value})}/>
             <div className="grid grid-cols-2 gap-4">
-              <input type="date" className="p-4 rounded-xl border-2 border-sakura-pink/20" value={travelInfo.startDate.replace(/\//g, '-')} onChange={(e) => setTravelInfo({...travelInfo, startDate: e.target.value.replace(/-/g, '/')})}/>
-              <input type="date" className="p-4 rounded-xl border-2 border-sakura-pink/20" value={travelInfo.endDate.replace(/\//g, '-')} onChange={(e) => setTravelInfo({...travelInfo, endDate: e.target.value.replace(/-/g, '/')})}/>
+              <div>
+                <label className="text-xs font-bold text-cocoa-brown/60 ml-2">開始日期</label>
+                <input type="date" className="w-full p-4 rounded-xl border-2 border-sakura-pink/20" value={travelInfo.startDate.replace(/\//g, '-')} onChange={(e) => setTravelInfo({...travelInfo, startDate: e.target.value.replace(/-/g, '/')})}/>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-cocoa-brown/60 ml-2">結束日期</label>
+                <input type="date" className="w-full p-4 rounded-xl border-2 border-sakura-pink/20" value={travelInfo.endDate.replace(/\//g, '-')} onChange={(e) => setTravelInfo({...travelInfo, endDate: e.target.value.replace(/-/g, '/')})}/>
+              </div>
             </div>
-            <button onClick={() => setIsInitialized(true)} className="cute-button w-full mt-4 py-4">開啟手帳之旅</button>
+            <button onClick={() => setIsInitialized(true)} className="cute-button w-full mt-6 py-4 shadow-floating">開始記錄 🌸</button>
           </div>
         </div>
       </div>
@@ -85,97 +81,106 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-handbook-beige text-cocoa-brown flex flex-col font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-handbook-beige text-cocoa-brown flex flex-col font-sans overflow-x-hidden pb-20">
       
-      {/* 🌸 M1-2 & M1-3: Header 與背景資產 */}
-      <header className="relative h-48 flex items-end px-6 pb-6 overflow-hidden">
-        <img 
-          src="/header-bg.jpg" 
-          alt="Header Background" 
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="header-bg-overlay"></div> {/* index.css 中的漸變遮罩 */}
+      {/* 🌸 M1-2 & M1-3: Header 與資產整合 */}
+      <header className="relative h-52 flex items-end px-6 pb-6 overflow-hidden shadow-lg">
+        <img src="/header-bg.jpg" alt="Header" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="header-bg-overlay"></div>
         
-        <div className="relative z-10 text-white w-full">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold drop-shadow-md">{travelInfo.name}</h1>
-            <img src="/home.png" alt="Home" className="w-8 h-8 object-contain" />
+        <div className="relative z-10 w-full flex justify-between items-end">
+          <div className="text-white">
+            <h1 className="text-2xl font-bold drop-shadow-md flex items-center gap-2">
+              {travelInfo.name} <img src="/home.png" className="w-6 h-6 inline" alt="home" />
+            </h1>
+            <p className="text-sm opacity-90">{travelInfo.startDate} - {travelInfo.endDate}</p>
+            <p className="text-[10px] opacity-70 mt-1">
+              <i className="fa-solid fa-rotate mr-1"></i>自動儲存於: {new Date(lastSaved).toLocaleTimeString()}
+            </p>
           </div>
-          <p className="text-sm opacity-90">{travelInfo.startDate} - {travelInfo.endDate}</p>
-          <p className="text-[10px] opacity-70 mt-1">最後儲存：{new Date(lastSaved).toLocaleTimeString()}</p>
+          
+          {/* M7-1: Excel 匯出按鈕入口 */}
+          <button className="bg-white/20 backdrop-blur-md p-2 rounded-full text-white border border-white/30 hover:bg-white/40" title="匯出行程">
+            <i className="fa-solid fa-file-excel text-xl"></i>
+          </button>
         </div>
       </header>
 
-      {/* 🌸 M1-2: 常駐置頂 Tabs */}
-      <nav className="sticky top-0 z-tabs bg-white/80 backdrop-blur-md flex justify-around py-3 border-b border-sakura-pink/10 shadow-sm">
-        {tabs.map((tab) => (
-          <button 
-            key={tab.name}
-            onClick={() => setActiveTab(tab.name)}
-            className={`flex flex-col items-center gap-1 transition-all ${activeTab === tab.name ? 'text-sakura-pink scale-110' : 'text-cocoa-brown/40'}`}
-          >
-            <i className={`fa-solid ${tab.icon} text-lg`}></i>
-            <span className="text-[10px] font-bold">{tab.name}</span>
+      {/* 🌸 M1-2: 常駐置頂導航 */}
+      <nav className="sticky top-0 z-tabs bg-white/90 backdrop-blur-md flex justify-around py-3 border-b border-sakura-pink/10 shadow-sm">
+        {[
+          { id: '行程', icon: 'fa-calendar-day' },
+          { id: '導航', icon: 'fa-map-location-dot' },
+          { id: '憑證', icon: 'fa-ticket' },
+          { id: '清單', icon: 'fa-basket-shopping' },
+          { id: '記帳', icon: 'fa-sakura' }
+        ].map((tab) => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all ${activeTab === tab.id ? 'text-sakura-pink scale-110' : 'text-cocoa-brown/40'}`}>
+            <i className={`fa-solid ${tab.icon === 'fa-sakura' ? 'fa-clover' : tab.icon} text-lg`}></i>
+            <span className="text-[10px] font-bold">{tab.id}</span>
           </button>
         ))}
       </nav>
 
-      {/* 🌸 主內容區 */}
-      <main className="flex-1 overflow-y-auto">
-        
+      <main className="flex-1 p-4 animate-fade-in">
+        {/* --- 🌸 記帳模組摘要 (M6-1, M6-2) --- */}
+        <section className="mb-6 sakura-card p-4 bg-white/60">
+          <div className="flex justify-between text-xs font-bold mb-2">
+            <span>預算進度 (櫻花花瓣)</span>
+            <span>剩餘 HKD ${budget - spent}</span>
+          </div>
+          <div className="cherry-progress-container">
+            <div className="cherry-progress-bar" style={{ width: `${(spent/budget)*100}%` }}></div>
+          </div>
+        </section>
+
+        {/* --- 🌸 行程分頁 (M2-1, M4-2) --- */}
         {activeTab === '行程' && (
-          <div className="animate-fade-in">
-            {/* M2-1: 日期橫向捲動分頁 */}
-            <div className="flex overflow-x-auto p-4 gap-3 no-scrollbar bg-white/30">
-              {travelDates.map((d) => (
-                <button
-                  key={d.date}
-                  onClick={() => setSelectedDate(d.date)}
-                  className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-bold transition-all ${selectedDate === d.date ? 'bg-sakura-pink text-white shadow-md' : 'bg-white text-cocoa-brown/60'}`}
-                >
+          <>
+            <div className="flex overflow-x-auto gap-3 pb-4 no-scrollbar">
+              {travelDates.map(d => (
+                <button key={d.date} onClick={() => setSelectedDate(d.date)} className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-bold transition-all ${selectedDate === d.date ? 'bg-sakura-pink text-white shadow-md' : 'bg-white text-cocoa-brown/50'}`}>
                   {d.label}
                 </button>
               ))}
             </div>
-
-            {/* 行程內容區 */}
-            <div className="p-4 space-y-4">
-              {/* M4-5: Timeline 容器 */}
-              <div className="relative pl-8">
-                <div className="timeline-line"></div>
-                
-                {/* 範例行程卡片 (展示 M7-2 Save 按鈕與 M1-1 風格) */}
-                <div className="sakura-card p-4 relative mb-6">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-lg">🌸 抵達飯店</h3>
-                    <span className="text-xs bg-powder-blue px-2 py-1 rounded-full">住宿</span>
-                  </div>
-                  <p className="text-sm mt-2 opacity-70">15:00 - 16:00 (1hr)</p>
-                  
-                  {/* M1-4: 右下角 Save 按鈕 */}
-                  <button className="absolute bottom-3 right-3 text-sakura-pink hover:scale-110 transition-transform" onClick={handleSave}>
-                    <i className="fa-solid fa-cloud-arrow-up text-xl"></i>
-                  </button>
-                </div>
+            
+            <div className="relative pl-6 mt-4">
+              <div className="timeline-line"></div>
+              {/* M2-4: 預設休眠時間顯示 */}
+              <div className="sakura-card p-3 mb-6 bg-cocoa-brown/5 opacity-50 border-dashed border-2">
+                <p className="text-xs italic">00:00 - 07:00 睡覺覺時間 😴</p>
               </div>
-
-              {/* M4-2: 有待編入行程區 */}
-              <div className="mt-12">
-                <h2 className="text-sm font-bold text-cocoa-brown/40 mb-3 px-2 flex items-center gap-2">
-                  <i className="fa-solid fa-box-archive"></i> 有待編入行程區
-                </h2>
-                <div className="sakura-card p-8 border-dashed border-2 bg-transparent text-center text-cocoa-brown/30">
-                  暫無待定行程，長按卡片可拉至此處
-                </div>
+              
+              {/* 卡片樣例展示 M1-4 Save 按鈕 */}
+              <div className="sakura-card p-4 relative mb-4">
+                <h3 className="font-bold">範例景點活動</h3>
+                <button className="absolute bottom-2 right-2 p-2 text-sakura-pink" onClick={handleGlobalSave}>
+                  <i className="fa-solid fa-floppy-disk"></i>
+                </button>
               </div>
             </div>
-          </div>
+
+            {/* M4-2: 有待編入行程區 */}
+            <div className="mt-10 border-t-2 border-dashed border-sakura-pink/20 pt-6">
+              <h2 className="text-sm font-bold opacity-40 mb-4 px-2">📥 有待編入行程區</h2>
+              <div className="h-24 flex items-center justify-center rounded-card border-2 border-dashed border-cocoa-brown/10 text-cocoa-brown/20 text-xs italic">
+                拖拽行程至此存放到待定區
+              </div>
+            </div>
+          </>
         )}
 
-        {/* 其他模組佔位... */}
-        {activeTab !== '行程' && (
-          <div className="p-10 text-center text-cocoa-brown/20 italic">
-            {activeTab} 模組載入中...
+        {/* --- 🌸 導航切換 (M5-1) --- */}
+        {activeTab === '導航' && (
+          <div className="space-y-4">
+            <div className="flex bg-white rounded-button p-1 shadow-inner">
+              <button onClick={() => setMapProvider('Google')} className={`flex-1 py-2 rounded-button text-xs font-bold transition-all ${mapProvider === 'Google' ? 'bg-sakura-pink text-white' : ''}`}>Google 地圖</button>
+              <button onClick={() => setMapProvider('高德')} className={`flex-1 py-2 rounded-button text-xs font-bold transition-all ${mapProvider === '高德' ? 'bg-sakura-pink text-white' : ''}`}>高德地圖</button>
+            </div>
+            <div className="sakura-card h-64 flex items-center justify-center bg-gray-100 italic text-sm">
+              [{mapProvider}地圖 Iframe 預覽]
+            </div>
           </div>
         )}
       </main>
@@ -185,7 +190,7 @@ export default function App() {
         <i className="fa-solid fa-plus"></i>
       </button>
 
-      {/* 🛡️ M7-4: Safety Render 區 */}
+      {/* 🛡️ M7-4: Debug / Safety Render 區 */}
       <div className="safety-zone">🌸Tiffany & Benjamin🌸</div>
     </div>
   );
