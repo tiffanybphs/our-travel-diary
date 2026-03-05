@@ -1,197 +1,154 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MainLayout } from './components/Layout/MainLayout';
+import { DailyTimeline } from './views/DailyTimeline';
+import { ExpenseTracker } from './modules/Expenses/ExpenseTracker';
+import { TransportGuide } from './modules/Navigation/TransportGuide';
+import { BookingManager } from './modules/Bookings/BookingManager';
+import { ShoppingList } from './modules/Shopping/ShoppingList';
+import { Toast } from './components/ui/Toast';
+import { supabase } from './supabaseClient'; // M7: 實時同步核心
 
-/**
- * 🌸 旅遊手帳：終極中控台 (App.tsx)
- * 嚴格符合 Module 1-7 所有 Requirement-level 重要細節
- */
+const TRIP_ID = 'tokyo-cherry-blossom-2026';
+const TRAVEL_MATES = ['Tiffany', 'Benjamin', 'Alice', 'Bob', 'Charlie'];
 
 export default function App() {
-  // --- 1. 基礎狀態 (M1, M2) ---
-  const [activeTab, setActiveTab] = useState('行程');
-  const [selectedDate, setSelectedDate] = useState(''); 
+  // --- 1. 核心狀態與身份 (M1, M7) ---
+  const [activeTab, setActiveTab] = useState('schedule');
+  const [currentUser, setCurrentUser] = useState('Tiffany');
   const [isInitialized, setIsInitialized] = useState(false);
-  
-  // --- 2. 協作與同步 (M7-2, M7-3) ---
-  const [lastSaved, setLastSaved] = useState(new Date().toISOString());
-  const [travelInfo, setTravelInfo] = useState({
-    name: '我的日本之旅',
-    startDate: '2026/10/21',
-    endDate: '2026/10/26'
-  });
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [lastSync, setLastSync] = useState(new Date().toISOString());
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  // --- 3. 導航與地圖 (M5-1) ---
-  const [mapProvider, setMapProvider] = useState<'Google' | '高德'>('Google');
-
-  // --- 4. 預算與記帳 (M6-1, M6-2) ---
-  const [budget] = useState(10000);
-  const [spent] = useState(3500); // 範例支出
-
-  // --- M2-1: 生成日期 (格式 mm.dd(ddd)) ---
-  const travelDates = (() => {
-    const dates = [];
-    let curr = new Date(travelInfo.startDate);
-    const last = new Date(travelInfo.endDate);
-    while (curr <= last) {
-      const dateStr = curr.toISOString().split('T')[0].replace(/-/g, '/');
-      const label = `${(curr.getMonth() + 1).toString().padStart(2, '0')}.${curr.getDate().toString().padStart(2, '0')}(${['日', '一', '二', '三', '四', '五', '六'][curr.getDay()]})`;
-      dates.push({ date: dateStr, label });
-      curr.setDate(curr.getDate() + 1);
-    }
-    return dates;
-  })();
-
+  // --- 2. M7: 實時訂閱邏輯 (Real-time Sync) ---
   useEffect(() => {
-    if (travelDates.length > 0 && !selectedDate) setSelectedDate(travelDates[0].date);
-  }, [travelDates]);
+    // 訂閱 Supabase 頻道，當任何旅伴修改資料時觸發更新
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => setLastSync(new Date().toISOString()))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule' }, () => setLastSync(new Date().toISOString()))
+      .subscribe();
 
-  // --- M7-3: 每 10 分鐘自動儲存 ---
-  useEffect(() => {
-    const timer = setInterval(() => handleGlobalSave(), 600000);
-    return () => clearInterval(timer);
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const handleGlobalSave = () => {
-    setLastSaved(new Date().toISOString());
-    // 這裡未來會接 Supabase 的樂觀更新邏輯
-  };
+  // --- 3. M5: 離線與同步 UI 提醒 ---
+  useEffect(() => {
+    const handleStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', handleStatus);
+    window.addEventListener('offline', handleStatus);
+    return () => { window.removeEventListener('online', handleStatus); window.removeEventListener('offline', handleStatus); };
+  }, []);
 
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  // --- 4. M2: 初始化設定 (Tiffany & 旅伴專用) ---
   if (!isInitialized) {
     return (
-      <div className="min-h-screen bg-handbook-beige flex items-center justify-center p-6">
-        <div className="sakura-card w-full max-w-md p-8 animate-fade-in text-center">
-          <h1 className="text-2xl font-bold text-cocoa-brown mb-6">🌸 旅遊手帳設定</h1>
-          <div className="space-y-4 text-left">
-            <label className="text-xs font-bold text-cocoa-brown/60 ml-2">旅程名稱</label>
-            <input type="text" className="w-full p-4 rounded-xl border-2 border-sakura-pink/20 outline-none focus:border-sakura-pink" value={travelInfo.name} onChange={(e) => setTravelInfo({...travelInfo, name: e.target.value})}/>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-bold text-cocoa-brown/60 ml-2">開始日期</label>
-                <input type="date" className="w-full p-4 rounded-xl border-2 border-sakura-pink/20" value={travelInfo.startDate.replace(/\//g, '-')} onChange={(e) => setTravelInfo({...travelInfo, startDate: e.target.value.replace(/-/g, '/')})}/>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-cocoa-brown/60 ml-2">結束日期</label>
-                <input type="date" className="w-full p-4 rounded-xl border-2 border-sakura-pink/20" value={travelInfo.endDate.replace(/\//g, '-')} onChange={(e) => setTravelInfo({...travelInfo, endDate: e.target.value.replace(/-/g, '/')})}/>
+      <div className="min-h-screen bg-[#FFF8F8] flex items-center justify-center p-6 font-sans">
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl border border-rose-100/50">
+          <div className="text-4xl mb-6">🌸</div>
+          <h2 className="text-2xl font-black text-gray-800 mb-2">Tokyo 2026</h2>
+          <p className="text-[10px] font-bold text-rose-300 uppercase tracking-[0.2em] mb-8 text-center">Travelers Collaboration Hub</p>
+          
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 ml-2 uppercase">請選擇你的身份</label>
+              <div className="grid grid-cols-2 gap-2">
+                {TRAVEL_MATES.map(mate => (
+                  <button 
+                    key={mate}
+                    onClick={() => setCurrentUser(mate)}
+                    className={`py-3 rounded-2xl text-xs font-bold transition-all border ${currentUser === mate ? 'bg-rose-400 text-white border-rose-400 shadow-lg' : 'bg-gray-50 text-gray-400 border-transparent hover:bg-rose-50'}`}
+                  >
+                    {mate}
+                  </button>
+                ))}
               </div>
             </div>
-            <button onClick={() => setIsInitialized(true)} className="cute-button w-full mt-6 py-4 shadow-floating">開始記錄 🌸</button>
+            <button onClick={() => setIsInitialized(true)} className="w-full bg-gray-900 text-white font-black py-4 rounded-2xl active:scale-95 transition-all shadow-xl">
+              開啟手帳
+            </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
+  // --- 5. 模組分發 (M2-M7) ---
+  const renderModule = () => {
+    const props = { tripId: TRIP_ID, currentUser, isOnline };
+    switch (activeTab) {
+      case 'schedule':  return <DailyTimeline {...props} />;
+      case 'transport': return <TransportGuide {...props} />;
+      case 'bookings':  return <BookingManager {...props} />;
+      case 'expenses':  return <ExpenseTracker {...props} />;
+      case 'shopping':  return <ShoppingList {...props} />;
+      default:          return <DailyTimeline {...props} />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-handbook-beige text-cocoa-brown flex flex-col font-sans overflow-x-hidden pb-20">
+    <div className="min-h-screen bg-[#FFFBFB] flex flex-col max-w-md mx-auto relative overflow-x-hidden">
       
-      {/* 🌸 M1-2 & M1-3: Header 與資產整合 */}
-      <header className="relative h-52 flex items-end px-6 pb-6 overflow-hidden shadow-lg">
-        <img src="/header-bg.jpg" alt="Header" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="header-bg-overlay"></div>
+      {/* 🌸 M1: 頂部視覺與 Header */}
+      <header className="relative h-56 flex flex-col justify-end px-6 pb-6 shadow-lg overflow-hidden">
+        <img src="/header-bg.jpg" alt="Tokyo" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         
-        <div className="relative z-10 w-full flex justify-between items-end">
-          <div className="text-white">
-            <h1 className="text-2xl font-bold drop-shadow-md flex items-center gap-2">
-              {travelInfo.name} <img src="/home.png" className="w-6 h-6 inline" alt="home" />
-            </h1>
-            <p className="text-sm opacity-90">{travelInfo.startDate} - {travelInfo.endDate}</p>
-            <p className="text-[10px] opacity-70 mt-1">
-              <i className="fa-solid fa-rotate mr-1"></i>自動儲存於: {new Date(lastSaved).toLocaleTimeString()}
-            </p>
+        <div className="relative z-10 space-y-2">
+          <div className="flex justify-between items-start">
+            <div className="bg-rose-400/80 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2">
+              <img src="/home.png" className="w-3 h-3 invert" alt="home" />
+              <span className="text-[9px] font-black text-white uppercase tracking-widest">2026 Cherry Blossom</span>
+            </div>
+            {!isOnline && <div className="p-2 bg-amber-500 rounded-full animate-pulse shadow-lg shadow-amber-500/50"><WifiOff size={14} className="text-white"/></div>}
           </div>
           
-          {/* M7-1: Excel 匯出按鈕入口 */}
-          <button className="bg-white/20 backdrop-blur-md p-2 rounded-full text-white border border-white/30 hover:bg-white/40" title="匯出行程">
-            <i className="fa-solid fa-file-excel text-xl"></i>
-          </button>
+          <div className="flex justify-between items-end">
+            <div>
+              <h1 className="text-2xl font-black text-white italic tracking-tight">Konnichiwa, {currentUser}</h1>
+              <p className="text-[10px] text-white/60 font-medium">同步時間: {new Date(lastSync).toLocaleTimeString()}</p>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-black text-rose-300 uppercase tracking-widest">Tiffany 57cm</span>
+              <span className="text-[8px] text-white/40 font-bold uppercase">Optimized for M1-M7</span>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* 🌸 M1-2: 常駐置頂導航 */}
-      <nav className="sticky top-0 z-tabs bg-white/90 backdrop-blur-md flex justify-around py-3 border-b border-sakura-pink/10 shadow-sm">
-        {[
-          { id: '行程', icon: 'fa-calendar-day' },
-          { id: '導航', icon: 'fa-map-location-dot' },
-          { id: '憑證', icon: 'fa-ticket' },
-          { id: '清單', icon: 'fa-basket-shopping' },
-          { id: '記帳', icon: 'fa-sakura' }
-        ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all ${activeTab === tab.id ? 'text-sakura-pink scale-110' : 'text-cocoa-brown/40'}`}>
-            <i className={`fa-solid ${tab.icon === 'fa-sakura' ? 'fa-clover' : tab.icon} text-lg`}></i>
-            <span className="text-[10px] font-bold">{tab.id}</span>
-          </button>
-        ))}
-      </nav>
+      {/* 🌸 M1-3: 主體導航整合 */}
+      <MainLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+        <main className="flex-1 overflow-y-auto no-scrollbar pb-24">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderModule()}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </MainLayout>
 
-      <main className="flex-1 p-4 animate-fade-in">
-        {/* --- 🌸 記帳模組摘要 (M6-1, M6-2) --- */}
-        <section className="mb-6 sakura-card p-4 bg-white/60">
-          <div className="flex justify-between text-xs font-bold mb-2">
-            <span>預算進度 (櫻花花瓣)</span>
-            <span>剩餘 HKD ${budget - spent}</span>
-          </div>
-          <div className="cherry-progress-container">
-            <div className="cherry-progress-bar" style={{ width: `${(spent/budget)*100}%` }}></div>
-          </div>
-        </section>
-
-        {/* --- 🌸 行程分頁 (M2-1, M4-2) --- */}
-        {activeTab === '行程' && (
-          <>
-            <div className="flex overflow-x-auto gap-3 pb-4 no-scrollbar">
-              {travelDates.map(d => (
-                <button key={d.date} onClick={() => setSelectedDate(d.date)} className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-bold transition-all ${selectedDate === d.date ? 'bg-sakura-pink text-white shadow-md' : 'bg-white text-cocoa-brown/50'}`}>
-                  {d.label}
-                </button>
-              ))}
-            </div>
-            
-            <div className="relative pl-6 mt-4">
-              <div className="timeline-line"></div>
-              {/* M2-4: 預設休眠時間顯示 */}
-              <div className="sakura-card p-3 mb-6 bg-cocoa-brown/5 opacity-50 border-dashed border-2">
-                <p className="text-xs italic">00:00 - 07:00 睡覺覺時間 😴</p>
-              </div>
-              
-              {/* 卡片樣例展示 M1-4 Save 按鈕 */}
-              <div className="sakura-card p-4 relative mb-4">
-                <h3 className="font-bold">範例景點活動</h3>
-                <button className="absolute bottom-2 right-2 p-2 text-sakura-pink" onClick={handleGlobalSave}>
-                  <i className="fa-solid fa-floppy-disk"></i>
-                </button>
-              </div>
-            </div>
-
-            {/* M4-2: 有待編入行程區 */}
-            <div className="mt-10 border-t-2 border-dashed border-sakura-pink/20 pt-6">
-              <h2 className="text-sm font-bold opacity-40 mb-4 px-2">📥 有待編入行程區</h2>
-              <div className="h-24 flex items-center justify-center rounded-card border-2 border-dashed border-cocoa-brown/10 text-cocoa-brown/20 text-xs italic">
-                拖拽行程至此存放到待定區
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* --- 🌸 導航切換 (M5-1) --- */}
-        {activeTab === '導航' && (
-          <div className="space-y-4">
-            <div className="flex bg-white rounded-button p-1 shadow-inner">
-              <button onClick={() => setMapProvider('Google')} className={`flex-1 py-2 rounded-button text-xs font-bold transition-all ${mapProvider === 'Google' ? 'bg-sakura-pink text-white' : ''}`}>Google 地圖</button>
-              <button onClick={() => setMapProvider('高德')} className={`flex-1 py-2 rounded-button text-xs font-bold transition-all ${mapProvider === '高德' ? 'bg-sakura-pink text-white' : ''}`}>高德地圖</button>
-            </div>
-            <div className="sakura-card h-64 flex items-center justify-center bg-gray-100 italic text-sm">
-              [{mapProvider}地圖 Iframe 預覽]
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* 🌸 M4-1: 右下角固定「+」按鈕 */}
-      <button className="fixed bottom-6 right-6 w-14 h-14 bg-sakura-pink text-white rounded-full shadow-floating flex items-center justify-center text-2xl z-modal active:scale-90 transition-all">
-        <i className="fa-solid fa-plus"></i>
-      </button>
-
-      {/* 🛡️ M7-4: Debug / Safety Render 區 */}
-      <div className="safety-zone">🌸Tiffany & Benjamin🌸</div>
+      {/* 全局 UI 組件 */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      
+      {/* M7-4: 安全底線與 PWA 標識 */}
+      <div className="fixed bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-200 via-rose-400 to-rose-200 opacity-20 pointer-events-none" />
     </div>
   );
+}
+
+// 輔助圖示組件
+function WifiOff({ size, className }: { size: number, className: string }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className={className}><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>;
 }
